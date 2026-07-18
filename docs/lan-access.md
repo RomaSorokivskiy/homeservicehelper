@@ -31,4 +31,12 @@ bash scripts/configure-lan-access.sh
 
 Caddy створює приватний локальний центр сертифікації. Щоб прибрати попередження браузера, встановіть його root certificate на кожен довірений пристрій. Сертифікат зберігається всередині Docker volume `apartment-home_caddy_data` за шляхом `/data/caddy/pki/authorities/local/root.crt`.
 
+Експортувати сертифікат у поточний каталог можна командою:
+
+```bash
+bash scripts/export-local-ca.sh
+```
+
+Передавайте `caddy-local-root.crt` лише власним довіреним пристроям. На Windows його потрібно імпортувати в `Trusted Root Certification Authorities`, а на Android/iOS — встановити як користувацький CA certificate і явно ввімкнути довіру.
+
 DNS і вебсервіси призначені лише для домашньої LAN. Не відкривайте порти 53, 80, 443 або 8088 через port forwarding роутера.
