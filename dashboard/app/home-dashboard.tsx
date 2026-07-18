@@ -493,6 +493,7 @@ export function HomeDashboard() {
     }
   };
   const ready = data.services.filter((s) => s.ok).length,
+    serviceTotal = data.services.length,
     open = data.tasks.filter((t) => !t.done).length;
   const date = new Intl.DateTimeFormat("uk-UA", {
     weekday: "long",
@@ -531,7 +532,7 @@ export function HomeDashboard() {
           <span>•••</span>
           <div>
             <b>Системи</b>
-            <small>{ready}/{data.integrations.length} онлайн</small>
+            <small>{ready}/{serviceTotal} онлайн</small>
           </div>
         </button>
       </aside>
@@ -962,11 +963,11 @@ function Today({
           <i>⌂</i>
           <span>
             <b>
-              {ready === data.integrations.length
+              {ready === data.services.length
                 ? "Дім у порядку"
                 : "Потрібне підключення"}
             </b>
-            <small>{ready}/{data.integrations.length} системи відповідають</small>
+            <small>{ready}/{data.services.length} системи відповідають</small>
           </span>
           <div className="home-signals" aria-hidden="true">
             <i>◉</i>
