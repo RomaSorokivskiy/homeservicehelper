@@ -14,3 +14,5 @@
 @media(max-width:900px){.cinema-page{margin:0 -18px -100px;padding:40px 22px 120px}.scene-grid{grid-template-columns:1fr 1fr}.cinema-page header h1,.home-page header h1{font-size:52px}}
 @media(max-width:540px){.poster-grid{grid-template-columns:1fr 1fr;gap:18px 12px}.scene-grid{grid-template-columns:1fr 1fr;gap:10px}.scene-grid>button,.scene-grid>div{min-height:145px;padding:17px}.cinema-page header h1,.home-page header h1{font-size:43px}}
 .shopping-tiles button{min-height:58px;display:flex;align-items:center;padding:12px 14px;border:1px solid #ded9cc;border-radius:11px;background:#f5f2e9;color:#59613e;font-size:10px;text-align:left}.shopping-tiles button:hover{background:#e7ecdf}
+.palette .search-result{min-height:54px;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;border-radius:12px}.palette .search-result:hover,.palette .search-result:focus{background:#e8efe6}.search-result>span{display:grid;gap:3px;font-size:10px}.search-result small{font-size:7px;color:var(--muted)}.search-result b{font-size:9px}
+.drawer{overflow:auto}.drawer .synced{position:relative;left:auto;bottom:auto;margin-top:24px}

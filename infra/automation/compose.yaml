@@ -6,6 +6,7 @@ services:
       TZ: ${TZ}
     volumes:
       - home_assistant_config:/config
+      - ./configuration.yaml:/config/configuration.yaml:ro
       - /etc/localtime:/etc/localtime:ro
     networks:
       - edge
