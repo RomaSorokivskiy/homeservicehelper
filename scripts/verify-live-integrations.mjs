@@ -31,6 +31,9 @@ if (task) {
     await action({ action: "task.unassign", id: task.id });
   }
 }
+const recurring = await action({ action: "task.create", title: "Integration check recurring task", repeatDays: 7 });
+if (!Number.isInteger(recurring.result?.id) || recurring.result.repeat_after !== 604800) throw new Error("Recurring Vikunja task contract failed");
+await action({ action: "task.delete", id: recurring.result.id });
 
 const search = await fetch(`${base}/api/search?q=te`).then((response) => response.json());
 if (!Array.isArray(search.results)) throw new Error("Unified search contract failed");
@@ -56,4 +59,4 @@ if (!snapshot.meal) {
   await action({ action: "meal.servings", servings: original });
   reversibleDinnerLifecycle = true;
 }
-console.log(JSON.stringify({ ok: true, integrations: 5, reversibleGroceryLifecycle: Boolean(shopping), reversibleTaskLifecycle: Boolean(task), residentAttribution: Boolean(task&&snapshot.household?.residents?.length), reversibleHomeboxLifecycle: Boolean(thing), richHomeboxCapture: true, reversibleDinnerLifecycle, searchResults: search.results.length }));
+console.log(JSON.stringify({ ok: true, integrations: 5, reversibleGroceryLifecycle: Boolean(shopping), reversibleTaskLifecycle: Boolean(task), recurringTasks: true, residentAttribution: Boolean(task&&snapshot.household?.residents?.length), reversibleHomeboxLifecycle: Boolean(thing), richHomeboxCapture: true, reversibleDinnerLifecycle, searchResults: search.results.length }));

@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     const data = await request.json();
     actionName = typeof data.action === "string" ? data.action : "unknown";
     let result;
-    if (data.action === "task.create") result = await call(`${urls.vikunja}/projects/${process.env.VIKUNJA_PROJECT_ID}/tasks`, process.env.VIKUNJA_TOKEN, "PUT", { title: data.title });
+    if (data.action === "task.create") result = await call(`${urls.vikunja}/projects/${process.env.VIKUNJA_PROJECT_ID}/tasks`, process.env.VIKUNJA_TOKEN, "PUT", { title: String(data.title||"").trim().slice(0,240), due_date: /^\d{4}-\d{2}-\d{2}$/.test(String(data.due||"")) ? `${data.due}T18:00:00Z` : undefined, repeat_after: Math.max(0,Math.min(365,Number(data.repeatDays)||0))*86400, repeat_mode: 0 });
     else if (data.action === "task.toggle") result = await call(`${urls.vikunja}/tasks/${data.id}`, process.env.VIKUNJA_TOKEN, "POST", { done: data.done });
     else if (data.action === "task.rename" && Number.isInteger(data.id) && typeof data.title === "string" && data.title.trim().length > 1) result = await call(`${urls.vikunja}/tasks/${data.id}`, process.env.VIKUNJA_TOKEN, "POST", { title: data.title.trim().slice(0, 240) });
     else if (data.action === "task.delete" && Number.isInteger(data.id)) result = await call(`${urls.vikunja}/tasks/${data.id}`, process.env.VIKUNJA_TOKEN, "DELETE", {});

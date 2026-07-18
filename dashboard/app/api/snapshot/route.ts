@@ -73,7 +73,7 @@ export async function GET() {
   const tokenConfigured: Record<string, boolean> = { mealie: Boolean(config.mealieToken), vikunja: Boolean(config.vikunjaToken), homebox: Boolean(config.homeboxToken), jellyfin: Boolean(config.jellyfinToken), homeAssistant: Boolean(config.homeAssistantToken) };
   return NextResponse.json({
     connected: { mealie: Boolean(config.mealieToken), vikunja: Boolean(config.vikunjaToken), homebox: Boolean(config.homeboxToken) },
-    tasks: taskItems.map((item) => ({ id: item.id, title: item.title, done: item.done, due: item.due_date || null, projectId: item.project_id })),
+    tasks: taskItems.map((item) => ({ id: item.id, title: item.title, done: item.done, due: item.due_date || null, projectId: item.project_id, repeatAfter: Number(item.repeat_after)||0 })),
     shopping: shoppingItems.map((item) => { const food = item.food as Record<string, unknown> | undefined; return { id: item.id, title: item.display || food?.name || item.note || "Покупка", checked: item.checked, shoppingListId: item.shoppingListId, quantity: Number(item.quantity) || 1 }; }),
     meal: mealItem ? { title: mealItem.title || "Запланована страва", note: mealItem.text || mealItem.description || "У плані на сьогодні", servings: Number(String(mealItem.text||"").match(/Порції:\s*(\d+)/)?.[1]) || 2, recipeId: mealItem.recipeId || (mealItem.recipe as Record<string,unknown>|undefined)?.id || null } : null,
     things: thingItems.map((item) => { const entityType = item.entityType as Record<string, unknown> | undefined; return { id: item.id, name: item.name, quantity: item.quantity || 1, type: entityType?.name || "Річ" }; }),
