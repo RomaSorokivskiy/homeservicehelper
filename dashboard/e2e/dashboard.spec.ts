@@ -14,6 +14,8 @@ test("authenticated household shell is operable and CSP-clean", async ({ page },
   await page.getByRole("button", { name: "Дім" }).click();
   await expect(page.getByRole("heading", { name: /Менше кнопок/ })).toBeVisible();
   await page.getByRole("button", { name: "Сьогодні" }).click();
+  await expect(page.locator(".skeleton")).toHaveCount(0, { timeout: 15_000 });
+  await page.waitForTimeout(800);
   await page.screenshot({ path: path.resolve("../docs/assets", `dashboard-${testInfo.project.name}.png`), fullPage: true });
   expect(errors.filter((message) => /content security policy|refused to/i.test(message))).toEqual([]);
 });
@@ -32,6 +34,7 @@ test("reduced motion and cached snapshot survive an offline reload", async ({ pa
 test("primary household surface has no serious WCAG A/AA violations", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: /Спокійний ритм/ })).toBeVisible();
+  await expect(page.locator(".skeleton")).toHaveCount(0, { timeout: 15_000 });
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     .analyze();

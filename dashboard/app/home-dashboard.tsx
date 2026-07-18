@@ -524,7 +524,6 @@ export function HomeDashboard() {
             >
               <i>{s.icon}</i>
               <span>{s.label}</span>
-              {s.id === "cinema" && <small>скоро</small>}
             </button>
           ))}
         </nav>
@@ -532,7 +531,7 @@ export function HomeDashboard() {
           <span>•••</span>
           <div>
             <b>Системи</b>
-            <small>{ready}/3 онлайн</small>
+            <small>{ready}/{data.integrations.length} онлайн</small>
           </div>
         </button>
       </aside>
@@ -962,8 +961,12 @@ function Today({
         <button className="pulse" onClick={details} data-reveal data-depth="4">
           <i>⌂</i>
           <span>
-            <b>{ready === 3 ? "Дім у порядку" : "Потрібне підключення"}</b>
-            <small>{ready}/3 системи відповідають</small>
+            <b>
+              {ready === data.integrations.length
+                ? "Дім у порядку"
+                : "Потрібне підключення"}
+            </b>
+            <small>{ready}/{data.integrations.length} системи відповідають</small>
           </span>
           <div className="home-signals" aria-hidden="true">
             <i>◉</i>

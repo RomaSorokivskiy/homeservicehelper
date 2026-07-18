@@ -6,6 +6,7 @@
 .queue-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}
 /* Keep the quiet palette while meeting WCAG AA for small household labels. */
 :root{--muted:#59635b}.rail nav button,.search,.motion{color:#59635b}.hero p,.space-page header p,.coming>p,.panel-head p,.composer header p,.drawer header p{color:#59635b}.task-list small,.things-list small,.empty,.panel-head>span,.palette footer{color:#59635b}
+.task-list .done{opacity:1}.task-list .done b,.pulse small,.panel h3{color:#59635b}
 
 /* Residential editorial direction — reference-led, original implementation */
 :root{--paper:#f5f1e8;--card:#fffdf8;--ink:#24251f;--muted:#706f66;--green:#56643a;--forest:#46542f;--line:#ddd7ca;--shadow:0 18px 55px rgba(66,55,36,.09)}
