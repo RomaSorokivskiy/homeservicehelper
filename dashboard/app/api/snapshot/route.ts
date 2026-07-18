@@ -38,7 +38,7 @@ export async function GET() {
     readJson(`${config.homeAssistant}/api/states`, config.homeAssistantToken).then((v) => (states.homeAssistant = true, v)).catch(() => (states.homeAssistant = false, null)),
   ]);
 
-  let cinema: Record<string, unknown> = { configured: Boolean(config.jellyfinToken), serverName: jellyfinPublic?.ServerName || "Jellyfin", resume: [], latest: [] };
+  let cinema: Record<string, unknown> = { configured: Boolean(config.jellyfinToken), serverName: jellyfinPublic?.ServerName || "Jellyfin", resume: [], latest: [], sessions: [] };
   if (config.jellyfinToken && states.jellyfin) {
     try {
       const users = await readJellyfin(`${config.jellyfin}/Users`) as Record<string, unknown>[];
@@ -49,7 +49,8 @@ export async function GET() {
           readJellyfin(`${config.jellyfin}/Users/${userId}/Items/Latest?Limit=12&IncludeItemTypes=Movie,Series&Fields=Overview,PrimaryImageAspectRatio`),
         ]);
         const normalizeMedia = (value: unknown) => ((value as { Items?: Record<string, unknown>[] })?.Items || (Array.isArray(value) ? value : [])).map((item) => ({ id: item.Id, title: item.Name, type: item.Type, overview: item.Overview || "", year: item.ProductionYear || null, image: item.ImageTags ? `/api/media-image?id=${item.Id}` : null, progress: (item.UserData as Record<string, unknown> | undefined)?.PlayedPercentage || 0 }));
-        cinema = { ...cinema, userId, resume: normalizeMedia(resume), latest: normalizeMedia(latest) };
+        const sessions = await readJellyfin(`${config.jellyfin}/Sessions`) as Record<string, unknown>[];
+        cinema = { ...cinema, userId, resume: normalizeMedia(resume), latest: normalizeMedia(latest), sessions: (sessions || []).filter((x) => x.SupportsRemoteControl).map((x) => ({ id: x.Id, name: x.DeviceName || x.Client, client: x.Client, nowPlaying: (x.NowPlayingItem as Record<string, unknown> | undefined)?.Name || null, paused: (x.PlayState as Record<string, unknown> | undefined)?.IsPaused || false })) };
       }
     } catch { /* Public health remains useful until the administrator creates a token. */ }
   }
