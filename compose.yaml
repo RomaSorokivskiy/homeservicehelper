@@ -6,6 +6,7 @@ include:
   - infra/observability/compose.yaml
   - infra/media/compose.yaml
   - infra/automation/compose.yaml
+  - infra/state/compose.yaml
 
 networks:
   edge:

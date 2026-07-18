@@ -10,6 +10,7 @@ services:
       HOMEBOX_URL: http://homebox:7745/api
       JELLYFIN_URL: http://jellyfin:8096
       HOME_ASSISTANT_URL: http://home-assistant:8123
+      HOUSEHOLD_STATE_URL: http://household-state:8787
       MEALIE_TOKEN: ${MEALIE_TOKEN:-}
       MEALIE_SHOPPING_LIST_ID: ${MEALIE_SHOPPING_LIST_ID:-}
       VIKUNJA_TOKEN: ${VIKUNJA_TOKEN:-}

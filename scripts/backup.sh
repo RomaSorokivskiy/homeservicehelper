@@ -10,7 +10,7 @@ umask 077
 docker compose exec -T mealie-db pg_dump -U mealie -d mealie -Fc > "${target}/mealie.dump"
 docker compose exec -T vikunja-db pg_dump -U vikunja -d vikunja -Fc > "${target}/vikunja.dump"
 
-for volume in mealie_data vikunja_files homebox_data vaultwarden_data caddy_data uptime_kuma_data jellyfin_config home_assistant_config; do
+for volume in mealie_data vikunja_files homebox_data vaultwarden_data caddy_data uptime_kuma_data jellyfin_config home_assistant_config household_state_data; do
   docker run --rm -v "apartment-home_${volume}:/source:ro" -v "${target}:/backup" alpine:3.22 \
     tar -C /source -czf "/backup/${volume}.tar.gz" .
 done

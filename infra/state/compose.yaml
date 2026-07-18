@@ -1,0 +1,19 @@
+services:
+  household-state:
+    build:
+      context: ../../state-service
+    restart: unless-stopped
+    volumes:
+      - household_state_data:/data
+    networks:
+      - edge
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8787/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  household_state_data:

@@ -6,6 +6,7 @@ const config = {
   homebox: process.env.HOMEBOX_URL || "http://homebox:7745/api",
   jellyfin: process.env.JELLYFIN_URL || "http://jellyfin:8096",
   homeAssistant: process.env.HOME_ASSISTANT_URL || "http://home-assistant:8123",
+  state: process.env.HOUSEHOLD_STATE_URL || "http://household-state:8787",
   mealieToken: process.env.MEALIE_TOKEN,
   vikunjaToken: process.env.VIKUNJA_TOKEN,
   homeboxToken: process.env.HOMEBOX_TOKEN,
@@ -29,13 +30,14 @@ async function readJellyfin(url: string) {
 
 export async function GET() {
   const states: Record<string, boolean> = {};
-  const [tasks, shopping, meals, things, jellyfinPublic, homeStates] = await Promise.all([
+  const [tasks, shopping, meals, things, jellyfinPublic, homeStates, household] = await Promise.all([
     readJson(`${config.vikunja}/tasks?per_page=30&sort_by=due_date&order_by=asc`, config.vikunjaToken).then((v) => (states.vikunja = true, v)).catch(() => (states.vikunja = false, null)),
     readJson(`${config.mealie}/api/households/shopping/items?perPage=12`, config.mealieToken).then((v) => (states.mealie = true, v)).catch(() => (states.mealie = false, null)),
     readJson(`${config.mealie}/api/households/mealplans/today`, config.mealieToken).catch(() => null),
     readJson(`${config.homebox}/v1/entities?page=1&pageSize=6`, config.homeboxToken).then((v) => (states.homebox = true, v)).catch(() => (states.homebox = false, null)),
     fetch(`${config.jellyfin}/System/Info/Public`, { signal: AbortSignal.timeout(5000) }).then((r) => { states.jellyfin = r.ok; return r.ok ? r.json() : null; }).catch(() => (states.jellyfin = false, null)),
     readJson(`${config.homeAssistant}/api/states`, config.homeAssistantToken).then((v) => (states.homeAssistant = true, v)).catch(() => (states.homeAssistant = false, null)),
+    fetch(`${config.state}/state`, { cache: "no-store", signal: AbortSignal.timeout(4000) }).then((r) => r.ok ? r.json() : null).catch(() => null),
   ]);
 
   let cinema: Record<string, unknown> = { configured: Boolean(config.jellyfinToken), serverName: jellyfinPublic?.ServerName || "Jellyfin", resume: [], latest: [], sessions: [] };
@@ -77,6 +79,7 @@ export async function GET() {
     things: thingItems.map((item) => { const entityType = item.entityType as Record<string, unknown> | undefined; return { id: item.id, name: item.name, quantity: item.quantity || 1, type: entityType?.name || "Річ" }; }),
     cinema,
     home,
+    household: household || { residents: [], queue: [] },
     services: ["mealie", "vikunja", "homebox", "jellyfin", "homeAssistant"].map((name) => ({ name, connected: tokenConfigured[name], ok: states[name] ?? false })),
     generatedAt: new Date().toISOString(),
   });

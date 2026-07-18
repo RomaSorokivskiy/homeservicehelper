@@ -6,7 +6,7 @@ test -f "${backup}/SHA256SUMS"
 (cd "$backup" && sha256sum --check SHA256SUMS)
 
 stamp="$(date +%s)"
-for volume in mealie_data homebox_data vaultwarden_data jellyfin_config home_assistant_config; do
+for volume in mealie_data homebox_data vaultwarden_data jellyfin_config home_assistant_config household_state_data; do
   archive="${backup}/${volume}.tar.gz"
   test -s "$archive"
   drill_volume="apartment_restore_drill_${volume}_${stamp}"
