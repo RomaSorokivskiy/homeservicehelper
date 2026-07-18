@@ -16,14 +16,19 @@ if grep -q '"StartupWizardCompleted":true' <<<"$public"; then
 fi
 
 password="$(openssl rand -base64 18 | tr -d '\n/+' | cut -c1-20)"
+echo "Configuring Jellyfin locale..."
 ${curl_net[@]} -X POST "$base/Startup/Configuration" -H 'Content-Type: application/json' \
   -d '{"UICulture":"uk-UA","MetadataCountryCode":"UA","PreferredMetadataLanguage":"uk"}' >/dev/null
+echo "Creating Jellyfin administrator..."
 ${curl_net[@]} -X POST "$base/Startup/User" -H 'Content-Type: application/json' \
   -d "{\"Name\":\"roma\",\"Password\":\"${password}\"}" >/dev/null
+echo "Disabling Jellyfin remote discovery..."
 ${curl_net[@]} -X POST "$base/Startup/RemoteAccess" -H 'Content-Type: application/json' \
   -d '{"EnableRemoteAccess":false,"EnableAutomaticPortMapping":false}' >/dev/null
+echo "Completing Jellyfin wizard..."
 ${curl_net[@]} -X POST "$base/Startup/Complete" >/dev/null
 
+echo "Creating dashboard integration token..."
 auth="$(${curl_net[@]} -X POST "$base/Users/AuthenticateByName" \
   -H 'Content-Type: application/json' \
   -H 'Authorization: MediaBrowser Client="Our Home", Device="Server", DeviceId="homeservicehelper", Version="1.0"' \
@@ -33,6 +38,7 @@ test -n "$token"
 
 for spec in 'Movies|movies|/media/movies' 'Shows|tvshows|/media/shows' 'Home Videos|homevideos|/media/home-videos'; do
   IFS='|' read -r name type path <<<"$spec"
+  echo "Creating $name library..."
   ${curl_net[@]} -X POST --get "$base/Library/VirtualFolders" \
     -H "X-Emby-Token: $token" \
     --data-urlencode "name=$name" --data-urlencode "collectionType=$type" --data-urlencode "paths=$path" --data-urlencode 'refreshLibrary=true' >/dev/null
