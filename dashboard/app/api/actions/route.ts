@@ -71,6 +71,12 @@ export async function POST(request: NextRequest) {
     else if (data.action === "scene.activate" && typeof data.entityId === "string" && /^scene\.[a-z0-9_]+$/.test(data.entityId)) result = await call(`${urls.homeAssistant}/api/services/scene/turn_on`, process.env.HOME_ASSISTANT_TOKEN, "POST", { entity_id: data.entityId });
     else if (data.action === "cinema.play" && /^[a-zA-Z0-9-]+$/.test(data.itemId) && /^[a-zA-Z0-9-]+$/.test(data.sessionId)) result = await jellyfinCall(`/Sessions/${data.sessionId}/Playing`, "POST", { ItemIds: [data.itemId], PlayCommand: "PlayNow", StartPositionTicks: 0 });
     else if (data.action === "cinema.control" && /^[a-zA-Z0-9-]+$/.test(data.sessionId) && ["PlayPause","Stop","NextTrack","PreviousTrack"].includes(data.command)) result = await jellyfinCall(`/Sessions/${data.sessionId}/Playing/${data.command}`, "POST");
+    else if (data.action === "movie-night.start" && /^[a-zA-Z0-9-]+$/.test(data.itemId) && /^[a-zA-Z0-9-]+$/.test(data.sessionId)) {
+      const scene = process.env.HA_MOVIE_SCENE;
+      const sceneResult = scene && /^scene\.[a-z0-9_]+$/.test(scene) ? await call(`${urls.homeAssistant}/api/services/scene/turn_on`, process.env.HOME_ASSISTANT_TOKEN, "POST", { entity_id: scene }) : { skipped: true, reason: "HA_MOVIE_SCENE is not configured" };
+      const playback = await jellyfinCall(`/Sessions/${data.sessionId}/Playing`, "POST", { ItemIds: [data.itemId], PlayCommand: "PlayNow", StartPositionTicks: 0 });
+      result = { scene: sceneResult, playback };
+    }
     else if (data.action === "resident.create") result = await stateCall("/residents", "POST", { name: String(data.title || "") });
     else if (data.action === "queue.add" && /^[a-zA-Z0-9-]+$/.test(data.item?.id)) result = await stateCall("/queue", "POST", { ...data.item, residentId: Number(data.residentId) || null });
     else if (data.action === "queue.remove" && /^[a-zA-Z0-9-]+$/.test(data.itemId)) result = await stateCall(`/queue/${data.itemId}`, "DELETE");

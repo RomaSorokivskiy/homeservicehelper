@@ -63,6 +63,9 @@ export async function GET() {
     alerts: haItems.filter((x) => /^(binary_sensor\.).*(leak|smoke|door)/.test(String(x.entity_id)) && x.state === "on").map((x) => ({ id: x.entity_id, name: (x.attributes as Record<string, unknown> | undefined)?.friendly_name || x.entity_id })),
     lightsOn: haItems.filter((x) => String(x.entity_id).startsWith("light.") && x.state === "on").length,
     entities: haItems.length,
+    presence: haItems.filter((x) => String(x.entity_id).startsWith("person.")).map((x) => ({ id: x.entity_id, name: (x.attributes as Record<string,unknown>|undefined)?.friendly_name || x.entity_id, home: x.state === "home" })),
+    energy: haItems.filter((x) => ["energy","power"].includes(String((x.attributes as Record<string,unknown>|undefined)?.device_class))).map((x) => ({ id: x.entity_id, name: (x.attributes as Record<string,unknown>|undefined)?.friendly_name || x.entity_id, value: x.state, unit: (x.attributes as Record<string,unknown>|undefined)?.unit_of_measurement || "" })).slice(0,6),
+    rooms: Object.entries(Object.groupBy(haItems.filter((x) => /^(light|climate|sensor|binary_sensor|cover)\./.test(String(x.entity_id)) && !String((x.attributes as Record<string,unknown>|undefined)?.device_class).includes("timestamp")), (x) => String((x.attributes as Record<string,unknown>|undefined)?.area_id || "Дім"))).map(([name,items]) => ({ name, entities: items?.length || 0, lightsOn: items?.filter((x) => String(x.entity_id).startsWith("light.") && x.state === "on").length || 0, temperature: items?.find((x) => (x.attributes as Record<string,unknown>|undefined)?.device_class === "temperature")?.state || null })),
   };
 
   const meal = Array.isArray(meals) ? meals[0] : meals?.items?.[0] || meals?.[0];
