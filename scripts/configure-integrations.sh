@@ -9,13 +9,29 @@ set_key() {
   else printf '%s=%s\n' "$key" "$value" >> .env; fi
 }
 
-read -rsp "Mealie API token: " mealie_token; echo; set_key MEALIE_TOKEN "$mealie_token"
-read -rsp "Vikunja API token: " vikunja_token; echo; set_key VIKUNJA_TOKEN "$vikunja_token"
-read -rsp "Homebox API token: " homebox_token; echo; set_key HOMEBOX_TOKEN "$homebox_token"
+if [[ "${1:-}" == "--from-env" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source .env
+  set +a
+  mealie_token="${MEALIE_TOKEN:?missing MEALIE_TOKEN}"
+  vikunja_token="${VIKUNJA_TOKEN:?missing VIKUNJA_TOKEN}"
+  homebox_token="${HOMEBOX_TOKEN:?missing HOMEBOX_TOKEN}"
+else
+  read -rsp "Mealie API token: " mealie_token; echo; set_key MEALIE_TOKEN "$mealie_token"
+  read -rsp "Vikunja API token: " vikunja_token; echo; set_key VIKUNJA_TOKEN "$vikunja_token"
+  read -rsp "Homebox API token: " homebox_token; echo; set_key HOMEBOX_TOKEN "$homebox_token"
+fi
 
 mealie_list_id="$(curl -ksS --resolve mealie.home.arpa:443:127.0.0.1 \
   -H "Authorization: Bearer ${mealie_token}" https://mealie.home.arpa/api/households/shopping/lists |
   python3 -c 'import json,sys; d=json.load(sys.stdin); a=d.get("items",d) if isinstance(d,dict) else d; print(a[0]["id"] if a else "")')"
+if [[ -z "$mealie_list_id" ]]; then
+  mealie_list_id="$(curl -ksS --resolve mealie.home.arpa:443:127.0.0.1 \
+    -H "Authorization: Bearer ${mealie_token}" -H 'Content-Type: application/json' \
+    -d '{"name":"Наші покупки"}' https://mealie.home.arpa/api/households/shopping/lists |
+    python3 -c 'import json,sys; print(json.load(sys.stdin).get("id", ""))')"
+fi
 vikunja_project_id="$(curl -ksS --resolve tasks.home.arpa:443:127.0.0.1 \
   -H "Authorization: Bearer ${vikunja_token}" 'https://tasks.home.arpa/api/v1/projects?per_page=50' |
   python3 -c 'import json,sys; a=json.load(sys.stdin); p=next((x for x in a if not x.get("is_archived") and x.get("id",0)>0), None); print(p["id"] if p else "")')"
