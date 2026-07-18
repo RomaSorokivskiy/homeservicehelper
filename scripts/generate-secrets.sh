@@ -10,7 +10,7 @@ fi
 
 cp .env.example "$env_file"
 
-for key in MEALIE_POSTGRES_PASSWORD VIKUNJA_POSTGRES_PASSWORD VIKUNJA_JWT_SECRET; do
+for key in MEALIE_POSTGRES_PASSWORD VIKUNJA_POSTGRES_PASSWORD VIKUNJA_SECRET HOMEBOX_API_KEY_PEPPER; do
   value="$(openssl rand -base64 36 | tr -d '\n')"
   sed -i "s|^${key}=CHANGE_ME$|${key}=${value}|" "$env_file"
 done

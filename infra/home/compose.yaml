@@ -77,9 +77,11 @@ services:
     depends_on:
       vikunja-db:
         condition: service_healthy
+      vikunja-files-init:
+        condition: service_completed_successfully
     environment:
       VIKUNJA_SERVICE_PUBLICURL: https://tasks.${HOME_DOMAIN}/
-      VIKUNJA_SERVICE_JWTSECRET: ${VIKUNJA_JWT_SECRET:?set VIKUNJA_JWT_SECRET}
+      VIKUNJA_SERVICE_SECRET: ${VIKUNJA_SECRET:?set VIKUNJA_SECRET}
       VIKUNJA_SERVICE_ENABLEREGISTRATION: "true"
       VIKUNJA_DATABASE_TYPE: postgres
       VIKUNJA_DATABASE_HOST: vikunja-db
@@ -94,12 +96,23 @@ services:
     security_opt:
       - no-new-privileges:true
 
+  vikunja-files-init:
+    image: ${POSTGRES_IMAGE}
+    user: "0:0"
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["chown -R 1000:0 /app/vikunja/files"]
+    volumes:
+      - vikunja_files:/app/vikunja/files
+    security_opt:
+      - no-new-privileges:true
+
   homebox:
     image: ${HOMEBOX_IMAGE}
     restart: unless-stopped
     environment:
       HBOX_OPTIONS_ALLOW_REGISTRATION: "true"
       HBOX_WEB_MAX_UPLOAD_SIZE: "10"
+      HBOX_AUTH_API_KEY_PEPPER: ${HOMEBOX_API_KEY_PEPPER:?set HOMEBOX_API_KEY_PEPPER}
     volumes:
       - homebox_data:/data
     networks:
