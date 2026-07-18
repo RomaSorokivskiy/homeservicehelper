@@ -33,7 +33,7 @@ Cinema and smart-apartment spaces are intentionally labelled as upcoming. They c
 
 ## Verified release metrics
 
-Measured against commit `918c967` on 2026-07-19. Screenshots above are from the deployed home server with live integrations.
+Measured against the residential redesign commit `70c4f9a` on 2026-07-19. Screenshots above are from the deployed home server with live integrations and an original, project-owned evening image.
 
 | Metric | Result | Budget / expectation |
 |---|---:|---:|
