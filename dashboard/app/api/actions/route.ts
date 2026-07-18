@@ -48,6 +48,8 @@ export async function POST(request: NextRequest) {
     else if (data.action === "queue.add" && /^[a-zA-Z0-9-]+$/.test(data.item?.id)) result = await stateCall("/queue", "POST", { ...data.item, residentId: Number(data.residentId) || null });
     else if (data.action === "queue.remove" && /^[a-zA-Z0-9-]+$/.test(data.itemId)) result = await stateCall(`/queue/${data.itemId}`, "DELETE");
     else if (data.action === "queue.vote" && /^[a-zA-Z0-9-]+$/.test(data.itemId) && Number.isInteger(data.residentId) && [-1,1].includes(data.value)) result = await stateCall("/votes", "POST", { mediaId: data.itemId, residentId: data.residentId, value: data.value });
+    else if (data.action === "task.assign" && Number.isInteger(data.id) && Number.isInteger(data.residentId)) result = await stateCall("/task-assignments", "POST", { taskId: data.id, residentId: data.residentId });
+    else if (data.action === "task.unassign" && Number.isInteger(data.id)) result = await stateCall(`/task-assignments/${data.id}`, "DELETE");
     else return NextResponse.json({ error: "Невідома дія" }, { status: 400 });
     const durationMs = Date.now() - startedAt;
     console.info(JSON.stringify({ event: "household_action", action: actionName, ok: true, durationMs, at: new Date().toISOString() }));

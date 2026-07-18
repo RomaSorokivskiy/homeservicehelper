@@ -79,7 +79,7 @@ export async function GET() {
     things: thingItems.map((item) => { const entityType = item.entityType as Record<string, unknown> | undefined; return { id: item.id, name: item.name, quantity: item.quantity || 1, type: entityType?.name || "Річ" }; }),
     cinema,
     home,
-    household: household || { residents: [], queue: [] },
+    household: household || { residents: [], queue: [], taskAssignments: [] },
     services: ["mealie", "vikunja", "homebox", "jellyfin", "homeAssistant"].map((name) => ({ name, connected: tokenConfigured[name], ok: states[name] ?? false })),
     generatedAt: new Date().toISOString(),
   });

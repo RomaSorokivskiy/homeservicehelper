@@ -25,8 +25,13 @@ const task = snapshot.tasks[0];
 if (task) {
   await action({ action: "task.rename", id: task.id, title: `${task.title} · check` });
   await action({ action: "task.rename", id: task.id, title: task.title });
+  const resident = snapshot.household?.residents?.[0];
+  if (resident) {
+    await action({ action: "task.assign", id: task.id, residentId: resident.id });
+    await action({ action: "task.unassign", id: task.id });
+  }
 }
 
 const search = await fetch(`${base}/api/search?q=te`).then((response) => response.json());
 if (!Array.isArray(search.results)) throw new Error("Unified search contract failed");
-console.log(JSON.stringify({ ok: true, integrations: 5, reversibleGroceryLifecycle: Boolean(shopping), reversibleTaskLifecycle: Boolean(task), searchResults: search.results.length }));
+console.log(JSON.stringify({ ok: true, integrations: 5, reversibleGroceryLifecycle: Boolean(shopping), reversibleTaskLifecycle: Boolean(task), residentAttribution: Boolean(task&&snapshot.household?.residents?.length), searchResults: search.results.length }));

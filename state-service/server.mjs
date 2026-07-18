@@ -10,6 +10,7 @@ db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;
 CREATE TABLE IF NOT EXISTS residents(id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE, color TEXT NOT NULL, created_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS movie_queue(media_id TEXT PRIMARY KEY, title TEXT NOT NULL, image TEXT, overview TEXT, year INTEGER, added_by INTEGER REFERENCES residents(id), added_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS movie_votes(media_id TEXT NOT NULL REFERENCES movie_queue(media_id) ON DELETE CASCADE, resident_id INTEGER NOT NULL REFERENCES residents(id) ON DELETE CASCADE, value INTEGER NOT NULL CHECK(value IN(-1,1)), PRIMARY KEY(media_id,resident_id));
+CREATE TABLE IF NOT EXISTS task_assignments(task_id INTEGER PRIMARY KEY, resident_id INTEGER NOT NULL REFERENCES residents(id) ON DELETE CASCADE, updated_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS audit_log(id INTEGER PRIMARY KEY, action TEXT NOT NULL, ok INTEGER NOT NULL, actor_id INTEGER, duration_ms INTEGER, created_at TEXT NOT NULL);`);
 if (!db.prepare("SELECT 1 FROM residents LIMIT 1").get()) db.prepare("INSERT INTO residents(name,color,created_at) VALUES(?,?,?)").run("Рома", "#657453", new Date().toISOString());
 
@@ -17,6 +18,7 @@ const json = (response, status, value) => { response.writeHead(status, { "conten
 const body = async (request) => { const chunks=[]; for await (const chunk of request) chunks.push(chunk); return chunks.length ? JSON.parse(Buffer.concat(chunks).toString("utf8")) : {}; };
 const state = () => ({
   residents: db.prepare("SELECT id,name,color FROM residents ORDER BY id").all(),
+  taskAssignments: db.prepare("SELECT task_id AS taskId,resident_id AS residentId FROM task_assignments ORDER BY task_id").all(),
   queue: db.prepare(`SELECT q.media_id AS id,q.title,q.image,q.overview,q.year,q.added_by AS addedBy,q.added_at AS addedAt,COALESCE(SUM(v.value),0) AS score,COUNT(v.resident_id) AS votes FROM movie_queue q LEFT JOIN movie_votes v ON v.media_id=q.media_id GROUP BY q.media_id ORDER BY score DESC,q.added_at`).all().map((item) => ({ ...item, residentVotes: db.prepare("SELECT resident_id AS residentId,value FROM movie_votes WHERE media_id=?").all(item.id) })),
 });
 
@@ -38,6 +40,11 @@ createServer(async (request, response) => {
       const current=db.prepare("SELECT value FROM movie_votes WHERE media_id=? AND resident_id=?").get(String(data.mediaId),Number(data.residentId));
       if(current?.value===value) db.prepare("DELETE FROM movie_votes WHERE media_id=? AND resident_id=?").run(String(data.mediaId),Number(data.residentId));
       else db.prepare("INSERT INTO movie_votes(media_id,resident_id,value) VALUES(?,?,?) ON CONFLICT(media_id,resident_id) DO UPDATE SET value=excluded.value").run(String(data.mediaId),Number(data.residentId),value);
+    } else if (request.method === "POST" && url.pathname === "/task-assignments") {
+      const taskId=Number(data.taskId),residentId=Number(data.residentId); if(!Number.isInteger(taskId)||!Number.isInteger(residentId)) return json(response,400,{error:"assignment"});
+      db.prepare("INSERT INTO task_assignments(task_id,resident_id,updated_at) VALUES(?,?,?) ON CONFLICT(task_id) DO UPDATE SET resident_id=excluded.resident_id,updated_at=excluded.updated_at").run(taskId,residentId,new Date().toISOString());
+    } else if (request.method === "DELETE" && url.pathname.startsWith("/task-assignments/")) {
+      db.prepare("DELETE FROM task_assignments WHERE task_id=?").run(Number(url.pathname.slice(18)));
     } else if (request.method === "POST" && url.pathname === "/audit") {
       db.prepare("INSERT INTO audit_log(action,ok,actor_id,duration_ms,created_at) VALUES(?,?,?,?,?)").run(String(data.action).slice(0,80),data.ok?1:0,data.actorId||null,data.durationMs||null,new Date().toISOString());
     } else return json(response, 404, { error: "not found" });
