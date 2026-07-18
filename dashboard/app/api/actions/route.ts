@@ -43,6 +43,7 @@ async function stateCall(path: string, method: string, body?: unknown) {
 
 export async function POST(request: NextRequest) {
   const startedAt = Date.now();
+  const actorName = request.headers.get("x-household-user") || "internal-check";
   let actionName = "unknown";
   try {
     const data = await request.json();
@@ -86,12 +87,12 @@ export async function POST(request: NextRequest) {
     else return NextResponse.json({ error: "Невідома дія" }, { status: 400 });
     const durationMs = Date.now() - startedAt;
     console.info(JSON.stringify({ event: "household_action", action: actionName, ok: true, durationMs, at: new Date().toISOString() }));
-    await stateCall("/audit", "POST", { action: actionName, ok: true, durationMs, actorId: null }).catch(() => null);
+    await stateCall("/audit", "POST", { action: actionName, ok: true, durationMs, actorName }).catch(() => null);
     return NextResponse.json({ ok: true, result });
   } catch (error) {
     const durationMs = Date.now() - startedAt;
     console.warn(JSON.stringify({ event: "household_action", action: actionName, ok: false, durationMs, at: new Date().toISOString() }));
-    await stateCall("/audit", "POST", { action: actionName, ok: false, durationMs, actorId: null }).catch(() => null);
+    await stateCall("/audit", "POST", { action: actionName, ok: false, durationMs, actorName }).catch(() => null);
     return NextResponse.json({ error: error instanceof Error ? error.message : "Не вдалося виконати дію" }, { status: 502 });
   }
 }

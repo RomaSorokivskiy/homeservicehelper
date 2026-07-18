@@ -9,6 +9,8 @@
 		Strict-Transport-Security "max-age=31536000"
 		X-Content-Type-Options "nosniff"
 		Referrer-Policy "no-referrer"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
 		-Server
 	}
 }
@@ -18,7 +20,9 @@ home.{$HOME_DOMAIN} {
 	basic_auth {
 		roma {$DASHBOARD_PASSWORD_HASH}
 	}
-	reverse_proxy dashboard:3000
+	reverse_proxy dashboard:3000 {
+		header_up X-Household-User {http.auth.user.id}
+	}
 }
 
 mealie.{$HOME_DOMAIN} {

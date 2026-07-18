@@ -20,5 +20,6 @@ check() {
 
 checks="$(check dashboard "home.${HOME_DOMAIN}" true),$(check cinema "cinema.${HOME_DOMAIN}"),$(check assistant "assistant.${HOME_DOMAIN}"),$(check mealie "mealie.${HOME_DOMAIN}"),$(check tasks "tasks.${HOME_DOMAIN}"),$(check things "things.${HOME_DOMAIN}"),$(check vault "vault.${HOME_DOMAIN}"),$(check status "status.${HOME_DOMAIN}")"
 printf '{"generatedAt":"%s","checks":[%s]}\n' "$timestamp" "$checks" > "$state_dir/health.json"
+cat "$state_dir/health.json" >> "$state_dir/health-history.jsonl"
 grep -q '"ok":false' "$state_dir/health.json" && exit 1
 cat "$state_dir/health.json"

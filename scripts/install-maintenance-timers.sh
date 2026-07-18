@@ -64,6 +64,44 @@ Persistent=true
 WantedBy=timers.target
 EOF
 
+cat > "$unit_dir/homeservicehelper-slo.service" <<EOF
+[Unit]
+Description=Calculate 30-day apartment availability SLO
+[Service]
+Type=oneshot
+WorkingDirectory=$repo
+ExecStart=/usr/bin/node $repo/scripts/slo-report.mjs
+EOF
+
+cat > "$unit_dir/homeservicehelper-slo.timer" <<'EOF'
+[Unit]
+Description=Calculate apartment SLO weekly
+[Timer]
+OnCalendar=Sun *-*-* 05:00:00
+Persistent=true
+[Install]
+WantedBy=timers.target
+EOF
+
+cat > "$unit_dir/homeservicehelper-update-check.service" <<EOF
+[Unit]
+Description=Check apartment container update channel without applying changes
+[Service]
+Type=oneshot
+WorkingDirectory=$repo
+ExecStart=$repo/scripts/check-updates.sh
+EOF
+
+cat > "$unit_dir/homeservicehelper-update-check.timer" <<'EOF'
+[Unit]
+Description=Check apartment service updates weekly
+[Timer]
+OnCalendar=Sat *-*-* 05:00:00
+Persistent=true
+[Install]
+WantedBy=timers.target
+EOF
+
 systemctl --user daemon-reload
-systemctl --user enable --now homeservicehelper-health.timer homeservicehelper-backup.timer homeservicehelper-restore-drill.timer
+systemctl --user enable --now homeservicehelper-health.timer homeservicehelper-backup.timer homeservicehelper-restore-drill.timer homeservicehelper-slo.timer homeservicehelper-update-check.timer
 echo "Maintenance timers installed."

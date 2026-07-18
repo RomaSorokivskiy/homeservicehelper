@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS movie_queue(media_id TEXT PRIMARY KEY, title TEXT NOT
 CREATE TABLE IF NOT EXISTS movie_votes(media_id TEXT NOT NULL REFERENCES movie_queue(media_id) ON DELETE CASCADE, resident_id INTEGER NOT NULL REFERENCES residents(id) ON DELETE CASCADE, value INTEGER NOT NULL CHECK(value IN(-1,1)), PRIMARY KEY(media_id,resident_id));
 CREATE TABLE IF NOT EXISTS task_assignments(task_id INTEGER PRIMARY KEY, resident_id INTEGER NOT NULL REFERENCES residents(id) ON DELETE CASCADE, updated_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS audit_log(id INTEGER PRIMARY KEY, action TEXT NOT NULL, ok INTEGER NOT NULL, actor_id INTEGER, duration_ms INTEGER, created_at TEXT NOT NULL);`);
+try { db.exec("ALTER TABLE audit_log ADD COLUMN actor_name TEXT"); } catch { /* Idempotent migration. */ }
 if (!db.prepare("SELECT 1 FROM residents LIMIT 1").get()) db.prepare("INSERT INTO residents(name,color,created_at) VALUES(?,?,?)").run("Рома", "#657453", new Date().toISOString());
 
 const json = (response, status, value) => { response.writeHead(status, { "content-type": "application/json", "cache-control": "no-store" }); response.end(JSON.stringify(value)); };
@@ -46,7 +47,7 @@ createServer(async (request, response) => {
     } else if (request.method === "DELETE" && url.pathname.startsWith("/task-assignments/")) {
       db.prepare("DELETE FROM task_assignments WHERE task_id=?").run(Number(url.pathname.slice(18)));
     } else if (request.method === "POST" && url.pathname === "/audit") {
-      db.prepare("INSERT INTO audit_log(action,ok,actor_id,duration_ms,created_at) VALUES(?,?,?,?,?)").run(String(data.action).slice(0,80),data.ok?1:0,data.actorId||null,data.durationMs||null,new Date().toISOString());
+      db.prepare("INSERT INTO audit_log(action,ok,actor_id,duration_ms,created_at,actor_name) VALUES(?,?,?,?,?,?)").run(String(data.action).slice(0,80),data.ok?1:0,data.actorId||null,data.durationMs||null,new Date().toISOString(),String(data.actorName||"system").slice(0,80));
     } else return json(response, 404, { error: "not found" });
     return json(response, 200, { ok: true, ...state() });
   } catch (error) { console.error(error); return json(response, 500, { error: "state operation failed" }); }
