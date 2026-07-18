@@ -1,0 +1,131 @@
+services:
+  dashboard:
+    build:
+      context: ../../dashboard
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ}
+      MEALIE_URL: http://mealie:9000
+      VIKUNJA_URL: http://vikunja:3456
+      HOMEBOX_URL: http://homebox:7745
+    networks:
+      - edge
+    security_opt:
+      - no-new-privileges:true
+
+  mealie-db:
+    image: ${POSTGRES_IMAGE}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mealie
+      POSTGRES_USER: mealie
+      POSTGRES_PASSWORD: ${MEALIE_POSTGRES_PASSWORD:?set MEALIE_POSTGRES_PASSWORD}
+    volumes:
+      - mealie_db:/var/lib/postgresql/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mealie -d mealie"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mealie:
+    image: ${MEALIE_IMAGE}
+    restart: unless-stopped
+    depends_on:
+      mealie-db:
+        condition: service_healthy
+    environment:
+      TZ: ${TZ}
+      BASE_URL: https://mealie.${HOME_DOMAIN}
+      DB_ENGINE: postgres
+      POSTGRES_SERVER: mealie-db
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: mealie
+      POSTGRES_PASSWORD: ${MEALIE_POSTGRES_PASSWORD}
+      POSTGRES_DB: mealie
+      ALLOW_SIGNUP: "true"
+    volumes:
+      - mealie_data:/app/data
+    networks:
+      - edge
+      - backend
+    security_opt:
+      - no-new-privileges:true
+
+  vikunja-db:
+    image: ${POSTGRES_IMAGE}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: vikunja
+      POSTGRES_USER: vikunja
+      POSTGRES_PASSWORD: ${VIKUNJA_POSTGRES_PASSWORD:?set VIKUNJA_POSTGRES_PASSWORD}
+    volumes:
+      - vikunja_db:/var/lib/postgresql/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vikunja -d vikunja"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  vikunja:
+    image: ${VIKUNJA_IMAGE}
+    restart: unless-stopped
+    depends_on:
+      vikunja-db:
+        condition: service_healthy
+    environment:
+      VIKUNJA_SERVICE_PUBLICURL: https://tasks.${HOME_DOMAIN}/
+      VIKUNJA_SERVICE_JWTSECRET: ${VIKUNJA_JWT_SECRET:?set VIKUNJA_JWT_SECRET}
+      VIKUNJA_SERVICE_ENABLEREGISTRATION: "true"
+      VIKUNJA_DATABASE_TYPE: postgres
+      VIKUNJA_DATABASE_HOST: vikunja-db
+      VIKUNJA_DATABASE_DATABASE: vikunja
+      VIKUNJA_DATABASE_USER: vikunja
+      VIKUNJA_DATABASE_PASSWORD: ${VIKUNJA_POSTGRES_PASSWORD}
+    volumes:
+      - vikunja_files:/app/vikunja/files
+    networks:
+      - edge
+      - backend
+    security_opt:
+      - no-new-privileges:true
+
+  homebox:
+    image: ${HOMEBOX_IMAGE}
+    restart: unless-stopped
+    environment:
+      HBOX_OPTIONS_ALLOW_REGISTRATION: "true"
+      HBOX_WEB_MAX_UPLOAD_SIZE: "10"
+    volumes:
+      - homebox_data:/data
+    networks:
+      - edge
+    security_opt:
+      - no-new-privileges:true
+
+  vaultwarden:
+    image: ${VAULTWARDEN_IMAGE}
+    restart: unless-stopped
+    environment:
+      DOMAIN: https://vault.${HOME_DOMAIN}
+      SIGNUPS_ALLOWED: "true"
+      INVITATIONS_ALLOWED: "true"
+      WEBSOCKET_ENABLED: "true"
+    volumes:
+      - vaultwarden_data:/data
+    networks:
+      - edge
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  mealie_db:
+  mealie_data:
+  vikunja_db:
+  vikunja_files:
+  homebox_data:
+  vaultwarden_data:

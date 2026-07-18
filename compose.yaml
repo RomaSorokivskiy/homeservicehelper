@@ -1,0 +1,14 @@
+name: apartment-home
+
+include:
+  - infra/core/compose.yaml
+  - infra/home/compose.yaml
+  - infra/observability/compose.yaml
+
+networks:
+  edge:
+    name: apartment-edge
+  backend:
+    name: apartment-backend
+    internal: true
+

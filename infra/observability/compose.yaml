@@ -1,0 +1,14 @@
+services:
+  uptime-kuma:
+    image: ${UPTIME_KUMA_IMAGE}
+    restart: unless-stopped
+    volumes:
+      - uptime_kuma_data:/app/data
+    networks:
+      - edge
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  uptime_kuma_data:
+
