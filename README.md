@@ -35,7 +35,7 @@ Five server adapters are live. The current Home Assistant instance has only syst
 
 ## Verified release metrics
 
-Measured on 2026-07-19 against deployed commit `504f90d` using Playwright Chromium 140 at 1440×1000 over the wired LAN. The screenshots above are generated from the fully loaded authenticated desktop/mobile E2E suite.
+Measured on 2026-07-19 against deployed commit `eee234a` using Playwright Chromium 140 at 1440×1000 over the wired LAN. The screenshots above are generated from the fully loaded authenticated desktop/mobile E2E suite.
 
 | Metric | Result | Budget / expectation |
 |---|---:|---:|
