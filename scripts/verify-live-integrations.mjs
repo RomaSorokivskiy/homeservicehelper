@@ -34,4 +34,9 @@ if (task) {
 
 const search = await fetch(`${base}/api/search?q=te`).then((response) => response.json());
 if (!Array.isArray(search.results)) throw new Error("Unified search contract failed");
-console.log(JSON.stringify({ ok: true, integrations: 5, reversibleGroceryLifecycle: Boolean(shopping), reversibleTaskLifecycle: Boolean(task), residentAttribution: Boolean(task&&snapshot.household?.residents?.length), searchResults: search.results.length }));
+const thing = snapshot.things[0];
+if (thing) {
+  await action({ action: "thing.update", id: thing.id, title: `${thing.name} · check`, quantity: thing.quantity });
+  await action({ action: "thing.update", id: thing.id, title: thing.name, quantity: thing.quantity });
+}
+console.log(JSON.stringify({ ok: true, integrations: 5, reversibleGroceryLifecycle: Boolean(shopping), reversibleTaskLifecycle: Boolean(task), residentAttribution: Boolean(task&&snapshot.household?.residents?.length), reversibleHomeboxLifecycle: Boolean(thing), searchResults: search.results.length }));
