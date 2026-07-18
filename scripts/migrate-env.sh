@@ -33,6 +33,15 @@ if ! grep -q '^DASHBOARD_SESSION_SECRET=' "$env_file"; then
   printf 'DASHBOARD_SESSION_SECRET=%s\n' "$(openssl rand -base64 48 | tr -d '\n')" >> "$env_file"
 fi
 
+if ! grep -q '^DASHBOARD_PASSWORD_HASH=' "$env_file"; then
+  dashboard_password="$(openssl rand -base64 18 | tr -d '\n/+' | cut -c1-20)"
+  dashboard_hash="$(docker run --rm caddy:2.10.2-alpine caddy hash-password --plaintext "$dashboard_password")"
+  printf 'DASHBOARD_PASSWORD_HASH=%s\n' "$dashboard_hash" >> "$env_file"
+  printf '%s\n' "$dashboard_password" > .dashboard-initial-password
+  chmod 600 .dashboard-initial-password
+  echo "Dashboard credentials created; retrieve the initial password from .dashboard-initial-password."
+fi
+
 if grep -q '^CADDY_HTTPS_PORT=8443$' "$env_file"; then
   sed -i 's/^CADDY_HTTPS_PORT=8443$/CADDY_HTTPS_PORT=443/' "$env_file"
 fi

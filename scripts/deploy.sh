@@ -11,4 +11,5 @@ if [[ -n "${media_root}" ]]; then
 fi
 docker compose pull
 docker compose up -d --build
+docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile
 docker compose ps

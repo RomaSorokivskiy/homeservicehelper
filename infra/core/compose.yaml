@@ -5,6 +5,7 @@ services:
     command: ["-conf", "/etc/coredns/Corefile"]
     environment:
       HOME_DOMAIN: ${HOME_DOMAIN}
+      DASHBOARD_PASSWORD_HASH: ${DASHBOARD_PASSWORD_HASH:-}
       LAN_IP: ${LAN_IP:?set LAN_IP}
       UPSTREAM_DNS: ${UPSTREAM_DNS:?set UPSTREAM_DNS}
     ports:

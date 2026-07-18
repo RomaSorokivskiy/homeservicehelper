@@ -27,7 +27,9 @@ test("exposes a normalized snapshot without integration secrets", async () => {
   assert.equal(response.status, 200);
   const payload = await response.json();
   assert.ok(Array.isArray(payload.tasks));
-  assert.equal(payload.services.length, 3);
+  assert.equal(payload.services.length, 5);
+  assert.ok(payload.cinema);
+  assert.ok(payload.home);
   assert.equal(JSON.stringify(payload).includes("token"), false);
 });
 

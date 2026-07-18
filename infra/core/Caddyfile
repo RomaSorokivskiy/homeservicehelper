@@ -15,6 +15,9 @@
 
 home.{$HOME_DOMAIN} {
 	import local_tls
+	basic_auth {
+		roma {$DASHBOARD_PASSWORD_HASH}
+	}
 	reverse_proxy dashboard:3000
 }
 

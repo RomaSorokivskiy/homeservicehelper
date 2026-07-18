@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const urls = { mealie: process.env.MEALIE_URL || "http://mealie:9000", vikunja: process.env.VIKUNJA_URL || "http://vikunja:3456/api/v1", homebox: process.env.HOMEBOX_URL || "http://homebox:7745/api" };
+const urls = { mealie: process.env.MEALIE_URL || "http://mealie:9000", vikunja: process.env.VIKUNJA_URL || "http://vikunja:3456/api/v1", homebox: process.env.HOMEBOX_URL || "http://homebox:7745/api", homeAssistant: process.env.HOME_ASSISTANT_URL || "http://home-assistant:8123" };
 
 async function call(url: string, token: string | undefined, method: string, body: unknown) {
   if (!token) throw new Error("Сервіс ще не підключено");
@@ -10,16 +10,23 @@ async function call(url: string, token: string | undefined, method: string, body
 }
 
 export async function POST(request: NextRequest) {
+  const startedAt = Date.now();
+  let actionName = "unknown";
   try {
     const data = await request.json();
+    actionName = typeof data.action === "string" ? data.action : "unknown";
     let result;
     if (data.action === "task.create") result = await call(`${urls.vikunja}/projects/${process.env.VIKUNJA_PROJECT_ID}/tasks`, process.env.VIKUNJA_TOKEN, "PUT", { title: data.title });
     else if (data.action === "task.toggle") result = await call(`${urls.vikunja}/tasks/${data.id}`, process.env.VIKUNJA_TOKEN, "POST", { done: data.done });
     else if (data.action === "shopping.create") result = await call(`${urls.mealie}/api/households/shopping/items`, process.env.MEALIE_TOKEN, "POST", { shoppingListId: process.env.MEALIE_SHOPPING_LIST_ID, note: data.title, display: data.title, quantity: 1 });
+    else if (data.action === "shopping.toggle" && typeof data.id === "string") result = await call(`${urls.mealie}/api/households/shopping/items/${data.id}`, process.env.MEALIE_TOKEN, "PUT", { checked: Boolean(data.checked) });
     else if (data.action === "thing.create") result = await call(`${urls.homebox}/v1/entities`, process.env.HOMEBOX_TOKEN, "POST", { name: data.title, quantity: 1 });
+    else if (data.action === "scene.activate" && typeof data.entityId === "string" && /^scene\.[a-z0-9_]+$/.test(data.entityId)) result = await call(`${urls.homeAssistant}/api/services/scene/turn_on`, process.env.HOME_ASSISTANT_TOKEN, "POST", { entity_id: data.entityId });
     else return NextResponse.json({ error: "Невідома дія" }, { status: 400 });
+    console.info(JSON.stringify({ event: "household_action", action: actionName, ok: true, durationMs: Date.now() - startedAt, at: new Date().toISOString() }));
     return NextResponse.json({ ok: true, result });
   } catch (error) {
+    console.warn(JSON.stringify({ event: "household_action", action: actionName, ok: false, durationMs: Date.now() - startedAt, at: new Date().toISOString() }));
     return NextResponse.json({ error: error instanceof Error ? error.message : "Не вдалося виконати дію" }, { status: 502 });
   }
 }
