@@ -1,0 +1,17 @@
+. :53 {
+    errors
+    health
+    ready
+    hosts {
+        {$LAN_IP} home.{$HOME_DOMAIN}
+        {$LAN_IP} mealie.{$HOME_DOMAIN}
+        {$LAN_IP} tasks.{$HOME_DOMAIN}
+        {$LAN_IP} things.{$HOME_DOMAIN}
+        {$LAN_IP} vault.{$HOME_DOMAIN}
+        {$LAN_IP} status.{$HOME_DOMAIN}
+        fallthrough
+    }
+    forward . {$UPSTREAM_DNS}
+    cache 300
+    reload
+}

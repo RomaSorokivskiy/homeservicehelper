@@ -4,7 +4,7 @@
 
 - Reserve a static DHCP lease for the server.
 - Plan local DNS records for `mealie`, `tasks`, `things`, `vault`, and `status` under `home.arpa`.
-- The bootstrap deployment uses host ports `8088` and `8443` so it can coexist with an existing nginx on `80/443`. Test with `https://home.home.arpa:8443`; migrate the routes into nginx before switching to standard ports.
+- Run `bash scripts/configure-lan-access.sh` to start CoreDNS on the server LAN IP and Caddy on standard HTTPS port 443. Then configure the router DHCP/LAN DNS server as described in `docs/lan-access.md`.
 - Do not forward ports 80/443 from the internet-facing router.
 - Remote access is through VPN only.
 

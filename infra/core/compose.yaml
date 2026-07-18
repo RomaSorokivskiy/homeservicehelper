@@ -1,10 +1,33 @@
 services:
+  coredns:
+    image: ${COREDNS_IMAGE}
+    restart: unless-stopped
+    command: ["-conf", "/etc/coredns/Corefile"]
+    environment:
+      HOME_DOMAIN: ${HOME_DOMAIN}
+      LAN_IP: ${LAN_IP:?set LAN_IP}
+      UPSTREAM_DNS: ${UPSTREAM_DNS:?set UPSTREAM_DNS}
+    ports:
+      - "${LAN_IP}:53:53/udp"
+      - "${LAN_IP}:53:53/tcp"
+    volumes:
+      - ./Corefile:/etc/coredns/Corefile:ro
+    networks:
+      - edge
+    healthcheck:
+      test: ["CMD", "/coredns", "-version"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    security_opt:
+      - no-new-privileges:true
+
   caddy:
     image: ${CADDY_IMAGE}
     restart: unless-stopped
     ports:
       - "${CADDY_HTTP_PORT:-8088}:80"
-      - "${CADDY_HTTPS_PORT:-8443}:443"
+      - "${CADDY_HTTPS_PORT:-443}:443"
     environment:
       HOME_DOMAIN: ${HOME_DOMAIN}
     volumes:
