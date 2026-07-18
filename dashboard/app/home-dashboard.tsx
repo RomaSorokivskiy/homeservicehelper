@@ -521,6 +521,7 @@ export function HomeDashboard() {
               key={s.id}
               className={space === s.id ? "active" : ""}
               onClick={() => setSpace(s.id)}
+              aria-label={s.label}
               aria-current={space === s.id ? "page" : undefined}
             >
               <i>{s.icon}</i>
