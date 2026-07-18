@@ -10,7 +10,7 @@ services:
     security_opt:
       - no-new-privileges:true
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8787/health"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8787/health"]
       interval: 20s
       timeout: 5s
       retries: 5
