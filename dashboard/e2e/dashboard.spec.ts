@@ -7,14 +7,14 @@ test("authenticated household shell is operable and CSP-clean", async ({ page },
   page.on("console", (message) => message.type() === "error" && errors.push(message.text()));
   await page.goto("/");
   await expect(page.getByRole("heading", { name: /Спокійний ритм/ })).toBeVisible();
+  await expect(page.locator(".skeleton")).toHaveCount(0, { timeout: 15_000 });
   if (testInfo.project.name === "mobile") await page.getByRole("button", { name: /Швидка команда|⌕/ }).click();
   else await page.keyboard.press("Control+K");
   await expect(page.getByRole("dialog", { name: "Швидкі команди" })).toBeVisible();
   await page.keyboard.press("Escape");
-  await page.getByRole("button", { name: "Дім" }).click();
+  await page.locator("nav").getByRole("button", { name: "Дім", exact: true }).click();
   await expect(page.getByRole("heading", { name: /Менше кнопок/ })).toBeVisible();
   await page.getByRole("button", { name: "Сьогодні" }).click();
-  await expect(page.locator(".skeleton")).toHaveCount(0, { timeout: 15_000 });
   await page.waitForTimeout(800);
   await page.screenshot({ path: path.resolve("../docs/assets", `dashboard-${testInfo.project.name}.png`), fullPage: true });
   expect(errors.filter((message) => /content security policy|refused to/i.test(message))).toEqual([]);
