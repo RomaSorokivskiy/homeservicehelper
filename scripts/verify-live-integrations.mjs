@@ -39,6 +39,9 @@ if (thing) {
   await action({ action: "thing.update", id: thing.id, title: `${thing.name} · check`, quantity: thing.quantity });
   await action({ action: "thing.update", id: thing.id, title: thing.name, quantity: thing.quantity });
 }
+const captured = await action({ action: "thing.create", title: "Integration check item", quantity: 2, description: "Temporary capture", serialNumber: "CHECK-001", warrantyExpires: "2030-01-01" });
+if (!captured.result?.id) throw new Error("Rich Homebox capture did not return an id");
+await action({ action: "thing.delete", id: captured.result.id });
 let reversibleDinnerLifecycle = false;
 if (!snapshot.meal) {
   const created = await action({ action: "meal.create", title: "Integration check dinner" });
@@ -53,4 +56,4 @@ if (!snapshot.meal) {
   await action({ action: "meal.servings", servings: original });
   reversibleDinnerLifecycle = true;
 }
-console.log(JSON.stringify({ ok: true, integrations: 5, reversibleGroceryLifecycle: Boolean(shopping), reversibleTaskLifecycle: Boolean(task), residentAttribution: Boolean(task&&snapshot.household?.residents?.length), reversibleHomeboxLifecycle: Boolean(thing), reversibleDinnerLifecycle, searchResults: search.results.length }));
+console.log(JSON.stringify({ ok: true, integrations: 5, reversibleGroceryLifecycle: Boolean(shopping), reversibleTaskLifecycle: Boolean(task), residentAttribution: Boolean(task&&snapshot.household?.residents?.length), reversibleHomeboxLifecycle: Boolean(thing), richHomeboxCapture: true, reversibleDinnerLifecycle, searchResults: search.results.length }));
