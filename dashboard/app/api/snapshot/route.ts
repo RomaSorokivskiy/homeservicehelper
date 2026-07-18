@@ -74,7 +74,7 @@ export async function GET() {
   return NextResponse.json({
     connected: { mealie: Boolean(config.mealieToken), vikunja: Boolean(config.vikunjaToken), homebox: Boolean(config.homeboxToken) },
     tasks: taskItems.map((item) => ({ id: item.id, title: item.title, done: item.done, due: item.due_date || null, projectId: item.project_id })),
-    shopping: shoppingItems.map((item) => { const food = item.food as Record<string, unknown> | undefined; return { id: item.id, title: item.display || food?.name || item.note || "Покупка", checked: item.checked, shoppingListId: item.shoppingListId }; }),
+    shopping: shoppingItems.map((item) => { const food = item.food as Record<string, unknown> | undefined; return { id: item.id, title: item.display || food?.name || item.note || "Покупка", checked: item.checked, shoppingListId: item.shoppingListId, quantity: Number(item.quantity) || 1 }; }),
     meal: mealItem ? { title: mealItem.title || "Запланована страва", note: mealItem.description || "У плані на сьогодні" } : null,
     things: thingItems.map((item) => { const entityType = item.entityType as Record<string, unknown> | undefined; return { id: item.id, name: item.name, quantity: item.quantity || 1, type: entityType?.name || "Річ" }; }),
     cinema,
