@@ -3,8 +3,8 @@ services:
     image: ${CADDY_IMAGE}
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
+      - "${CADDY_HTTP_PORT:-8088}:80"
+      - "${CADDY_HTTPS_PORT:-8443}:443"
     environment:
       HOME_DOMAIN: ${HOME_DOMAIN}
     volumes:
@@ -24,4 +24,3 @@ services:
 volumes:
   caddy_data:
   caddy_config:
-
