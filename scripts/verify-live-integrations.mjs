@@ -10,14 +10,23 @@ for (const name of ["mealie", "vikunja", "homebox", "jellyfin", "homeAssistant"]
 const action = async (payload) => {
   const response = await fetch(`${base}/api/actions`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
   if (!response.ok) throw new Error(`${payload.action} failed: ${response.status} ${await response.text()}`);
+  return response.json();
 };
 
 const shopping = snapshot.shopping.find((item) => item.shoppingListId);
 if (shopping) {
   await action({ action: "shopping.toggle", id: shopping.id, checked: !shopping.checked, shoppingListId: shopping.shoppingListId, title: shopping.title });
   await action({ action: "shopping.toggle", id: shopping.id, checked: shopping.checked, shoppingListId: shopping.shoppingListId, title: shopping.title });
+  await action({ action: "shopping.rename", id: shopping.id, checked: shopping.checked, shoppingListId: shopping.shoppingListId, title: `${shopping.title} · check` });
+  await action({ action: "shopping.rename", id: shopping.id, checked: shopping.checked, shoppingListId: shopping.shoppingListId, title: shopping.title });
+}
+
+const task = snapshot.tasks[0];
+if (task) {
+  await action({ action: "task.rename", id: task.id, title: `${task.title} · check` });
+  await action({ action: "task.rename", id: task.id, title: task.title });
 }
 
 const search = await fetch(`${base}/api/search?q=te`).then((response) => response.json());
 if (!Array.isArray(search.results)) throw new Error("Unified search contract failed");
-console.log(JSON.stringify({ ok: true, integrations: 5, reversibleGroceryWrite: Boolean(shopping), searchResults: search.results.length }));
+console.log(JSON.stringify({ ok: true, integrations: 5, reversibleGroceryLifecycle: Boolean(shopping), reversibleTaskLifecycle: Boolean(task), searchResults: search.results.length }));
