@@ -104,4 +104,5 @@ EOF
 
 systemctl --user daemon-reload
 systemctl --user enable --now homeservicehelper-health.timer homeservicehelper-backup.timer homeservicehelper-restore-drill.timer homeservicehelper-slo.timer homeservicehelper-update-check.timer
+systemctl --user restart homeservicehelper-health.timer homeservicehelper-backup.timer homeservicehelper-restore-drill.timer homeservicehelper-slo.timer homeservicehelper-update-check.timer
 echo "Maintenance timers installed."
