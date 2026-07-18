@@ -30,7 +30,7 @@ async function readJellyfin(url: string) {
 export async function GET() {
   const states: Record<string, boolean> = {};
   const [tasks, shopping, meals, things, jellyfinPublic, homeStates] = await Promise.all([
-    readJson(`${config.vikunja}/tasks?per_page=8&sort_by=due_date&order_by=asc`, config.vikunjaToken).then((v) => (states.vikunja = true, v)).catch(() => (states.vikunja = false, null)),
+    readJson(`${config.vikunja}/tasks?per_page=30&sort_by=due_date&order_by=asc`, config.vikunjaToken).then((v) => (states.vikunja = true, v)).catch(() => (states.vikunja = false, null)),
     readJson(`${config.mealie}/api/households/shopping/items?perPage=12`, config.mealieToken).then((v) => (states.mealie = true, v)).catch(() => (states.mealie = false, null)),
     readJson(`${config.mealie}/api/households/mealplans/today`, config.mealieToken).catch(() => null),
     readJson(`${config.homebox}/v1/entities?page=1&pageSize=6`, config.homeboxToken).then((v) => (states.homebox = true, v)).catch(() => (states.homebox = false, null)),
