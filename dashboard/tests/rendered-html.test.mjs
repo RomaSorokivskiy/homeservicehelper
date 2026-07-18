@@ -17,8 +17,8 @@ test("renders the Ukrainian household dashboard", async () => {
   assert.match(html, /<html lang="uk"/i);
   assert.match(html, /<title>Наш дім(?: · Наш дім)?<\/title>/i);
   assert.match(html, /Спокійний ритм/);
-  assert.match(html, /Спільні справи/);
-  assert.match(html, /Список продуктів/i);
+  assert.match(html, /Справи на сьогодні/);
+  assert.match(html, /Список покупок/i);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|Your site is taking shape/i);
 });
 
