@@ -1,0 +1,22 @@
+services:
+  home-assistant:
+    image: ${HOME_ASSISTANT_IMAGE}
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ}
+    volumes:
+      - home_assistant_config:/config
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - edge
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8123/', timeout=4)\" || exit 1"]
+      interval: 30s
+      timeout: 6s
+      retries: 20
+      start_period: 60s
+
+volumes:
+  home_assistant_config:

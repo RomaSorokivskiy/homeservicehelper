@@ -1,0 +1,29 @@
+services:
+  jellyfin:
+    image: ${JELLYFIN_IMAGE}
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ}
+      JELLYFIN_PublishedServerUrl: https://cinema.${HOME_DOMAIN}
+    volumes:
+      - jellyfin_config:/config
+      - jellyfin_cache:/cache
+      - ${MEDIA_ROOT:-/srv/media}:/media:ro
+    devices:
+      - /dev/dri/renderD128:/dev/dri/renderD128
+      - /dev/dri/card1:/dev/dri/card1
+    group_add:
+      - ${RENDER_GID:-109}
+    networks:
+      - edge
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8096/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  jellyfin_config:
+  jellyfin_cache:

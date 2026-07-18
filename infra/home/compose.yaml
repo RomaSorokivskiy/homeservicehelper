@@ -8,11 +8,17 @@ services:
       MEALIE_URL: http://mealie:9000
       VIKUNJA_URL: http://vikunja:3456/api/v1
       HOMEBOX_URL: http://homebox:7745/api
+      JELLYFIN_URL: http://jellyfin:8096
+      HOME_ASSISTANT_URL: http://home-assistant:8123
       MEALIE_TOKEN: ${MEALIE_TOKEN:-}
       MEALIE_SHOPPING_LIST_ID: ${MEALIE_SHOPPING_LIST_ID:-}
       VIKUNJA_TOKEN: ${VIKUNJA_TOKEN:-}
       VIKUNJA_PROJECT_ID: ${VIKUNJA_PROJECT_ID:-}
       HOMEBOX_TOKEN: ${HOMEBOX_TOKEN:-}
+      JELLYFIN_TOKEN: ${JELLYFIN_TOKEN:-}
+      HOME_ASSISTANT_TOKEN: ${HOME_ASSISTANT_TOKEN:-}
+      DASHBOARD_SESSION_SECRET: ${DASHBOARD_SESSION_SECRET}
+      DASHBOARD_USERS: ${DASHBOARD_USERS:-roma}
     networks:
       - edge
     security_opt:

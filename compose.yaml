@@ -4,6 +4,8 @@ include:
   - infra/core/compose.yaml
   - infra/home/compose.yaml
   - infra/observability/compose.yaml
+  - infra/media/compose.yaml
+  - infra/automation/compose.yaml
 
 networks:
   edge:
@@ -11,4 +13,3 @@ networks:
   backend:
     name: apartment-backend
     internal: true
-

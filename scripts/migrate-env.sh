@@ -22,6 +22,16 @@ gateway="$(ip -4 route show default | awk 'NR == 1 {print $3}')"
 set_default LAN_IP "$lan_ip"
 set_default UPSTREAM_DNS "$gateway"
 set_default COREDNS_IMAGE "coredns/coredns:1.14.4"
+set_default JELLYFIN_IMAGE "jellyfin/jellyfin:latest"
+set_default HOME_ASSISTANT_IMAGE "ghcr.io/home-assistant/home-assistant:stable"
+set_default MEDIA_ROOT "/srv/media"
+render_gid="$(getent group render 2>/dev/null | cut -d: -f3 || true)"
+set_default RENDER_GID "${render_gid:-109}"
+set_default DASHBOARD_USERS "roma"
+
+if ! grep -q '^DASHBOARD_SESSION_SECRET=' "$env_file"; then
+  printf 'DASHBOARD_SESSION_SECRET=%s\n' "$(openssl rand -base64 48 | tr -d '\n')" >> "$env_file"
+fi
 
 if grep -q '^CADDY_HTTPS_PORT=8443$' "$env_file"; then
   sed -i 's/^CADDY_HTTPS_PORT=8443$/CADDY_HTTPS_PORT=443/' "$env_file"

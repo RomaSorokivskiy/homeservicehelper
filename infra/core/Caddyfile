@@ -42,3 +42,13 @@ status.{$HOME_DOMAIN} {
 	import local_tls
 	reverse_proxy uptime-kuma:3001
 }
+
+cinema.{$HOME_DOMAIN} {
+	import local_tls
+	reverse_proxy jellyfin:8096
+}
+
+assistant.{$HOME_DOMAIN} {
+	import local_tls
+	reverse_proxy home-assistant:8123
+}
