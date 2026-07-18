@@ -102,7 +102,28 @@ Persistent=true
 WantedBy=timers.target
 EOF
 
+cat > "$unit_dir/homeservicehelper-offsite-backup.service" <<EOF
+[Unit]
+Description=Encrypt and copy latest apartment backup off-site
+After=network-online.target
+[Service]
+Type=oneshot
+WorkingDirectory=$repo
+Environment=BACKUP_ROOT=$HOME/backups/apartment-home
+ExecStart=$repo/scripts/offsite-backup.sh
+EOF
+
+cat > "$unit_dir/homeservicehelper-offsite-backup.timer" <<'EOF'
+[Unit]
+Description=Copy encrypted apartment backup off-site daily
+[Timer]
+OnCalendar=*-*-* 04:00:00
+Persistent=true
+[Install]
+WantedBy=timers.target
+EOF
+
 systemctl --user daemon-reload
-systemctl --user enable --now homeservicehelper-health.timer homeservicehelper-backup.timer homeservicehelper-restore-drill.timer homeservicehelper-slo.timer homeservicehelper-update-check.timer
-systemctl --user restart homeservicehelper-health.timer homeservicehelper-backup.timer homeservicehelper-restore-drill.timer homeservicehelper-slo.timer homeservicehelper-update-check.timer
+systemctl --user enable --now homeservicehelper-health.timer homeservicehelper-backup.timer homeservicehelper-offsite-backup.timer homeservicehelper-restore-drill.timer homeservicehelper-slo.timer homeservicehelper-update-check.timer
+systemctl --user restart homeservicehelper-health.timer homeservicehelper-backup.timer homeservicehelper-offsite-backup.timer homeservicehelper-restore-drill.timer homeservicehelper-slo.timer homeservicehelper-update-check.timer
 echo "Maintenance timers installed."
