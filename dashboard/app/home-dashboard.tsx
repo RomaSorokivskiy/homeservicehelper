@@ -1,131 +1,82 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 
 type Snapshot = {
-  greeting: string;
-  residents: string;
-  weather: { temperature: number; label: string };
-  attention: { tone: "ok" | "warning"; title: string; detail: string };
-  tasks: { id: number; title: string; done: boolean; owner: string }[];
-  meal: { title: string; note: string };
-  home: { temperature: number; humidity: number; doors: string; water: string };
-  services: { name: string; ok: boolean }[];
+  connected: Record<string, boolean>;
+  tasks: { id: number; title: string; done: boolean; due?: string }[];
+  shopping: { id: string; title: string; checked: boolean }[];
+  meal: { title: string; note: string; slug?: string } | null;
+  things: { id: string; name: string; quantity: number; type: string }[];
+  services: { name: string; connected: boolean; ok: boolean }[];
+  generatedAt: string;
 };
 
-const fallback: Snapshot = {
-  greeting: "Добрий вечір",
-  residents: "Ви обоє вдома",
-  weather: { temperature: 22, label: "тихо й тепло" },
-  attention: { tone: "ok", title: "Усе гаразд", detail: "Квартира не потребує уваги" },
-  tasks: [
-    { id: 1, title: "Замовити фільтр для води", done: false, owner: "Разом" },
-    { id: 2, title: "Забрати посилку", done: true, owner: "Саша" },
-    { id: 3, title: "Полити рослини", done: false, owner: "Дім" },
-  ],
-  meal: { title: "Паста з печеними томатами", note: "Усі продукти є" },
-  home: { temperature: 22.4, humidity: 46, doors: "Зачинено", water: "Норма" },
-  services: [
-    { name: "Mealie", ok: true }, { name: "Vikunja", ok: true },
-    { name: "Homebox", ok: true }, { name: "Vaultwarden", ok: true },
-  ],
-};
+const empty: Snapshot = { connected: {}, tasks: [], shopping: [], meal: null, things: [], services: [], generatedAt: "" };
+const labels: Record<string, string> = { mealie: "Кухня", vikunja: "Справи", homebox: "Речі" };
 
 export function HomeDashboard() {
-  const [snapshot, setSnapshot] = useState(fallback);
-  const [scene, setScene] = useState("Звичайний");
-  const [captureOpen, setCaptureOpen] = useState(false);
+  const [data, setData] = useState(empty);
+  const [loading, setLoading] = useState(true);
+  const [composer, setComposer] = useState(false);
+  const [kind, setKind] = useState("task.create");
   const [notice, setNotice] = useState("");
 
-  useEffect(() => {
-    fetch("/api/snapshot").then((r) => r.ok ? r.json() : fallback).then(setSnapshot).catch(() => setSnapshot(fallback));
+  const refresh = useCallback(async () => {
+    const response = await fetch("/api/snapshot", { cache: "no-store" });
+    setData(await response.json()); setLoading(false);
   }, []);
+  useEffect(() => { const kickoff = window.setTimeout(refresh, 0); const timer = window.setInterval(refresh, 60000); return () => { clearTimeout(kickoff); clearInterval(timer); }; }, [refresh]);
 
-  const pending = useMemo(() => snapshot.tasks.filter((task) => !task.done), [snapshot.tasks]);
-
-  function capture(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const value = String(form.get("capture") || "").trim();
-    if (!value) return;
-    setNotice(`Додано: ${value}`);
-    setCaptureOpen(false);
-    event.currentTarget.reset();
-    window.setTimeout(() => setNotice(""), 3000);
+  async function action(payload: Record<string, unknown>) {
+    const response = await fetch("/api/actions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Не вдалося виконати дію");
+    await refresh();
   }
 
-  function chooseScene(next: string) {
-    setScene(next);
-    setNotice(`Сцена «${next}» активована`);
-    window.setTimeout(() => setNotice(""), 3000);
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); const form = new FormData(event.currentTarget); const title = String(form.get("title") || "").trim(); if (!title) return;
+    try { await action({ action: kind, title }); setNotice("Готово — додано"); setComposer(false); event.currentTarget.reset(); }
+    catch (error) { setNotice(error instanceof Error ? error.message : "Сталася помилка"); }
+    setTimeout(() => setNotice(""), 3500);
   }
 
-  return (
-    <main className="shell">
-      <aside className="sidebar" aria-label="Основна навігація">
-        <a className="brand" href="#today" aria-label="Наш дім — головна"><span>Н</span><b>Наш дім</b></a>
-        <nav>
-          <a className="active" href="#today"><i>⌂</i><span>Сьогодні</span></a>
-          <a href="#plan"><i>✓</i><span>План</span></a>
-          <a href="#home"><i>◫</i><span>Дім</span></a>
-          <a href="https://things.home.arpa"><i>◇</i><span>Речі</span></a>
-          <a href="#rest"><i>▷</i><span>Відпочинок</span></a>
-        </nav>
-        <div className="sidebar-bottom"><span className="presence-dot" />{snapshot.residents}</div>
-      </aside>
+  async function toggle(id: number, done: boolean) {
+    setData((current) => ({ ...current, tasks: current.tasks.map((task) => task.id === id ? { ...task, done } : task) }));
+    try { await action({ action: "task.toggle", id, done }); } catch { await refresh(); setNotice("Не вдалося змінити справу"); }
+  }
 
-      <section className="content" id="today">
-        <header className="topbar">
-          <div><p className="eyebrow">Субота, 18 липня</p><h1>{snapshot.greeting}</h1></div>
-          <div className="weather"><strong>{snapshot.weather.temperature}°</strong><span>{snapshot.weather.label}</span></div>
-        </header>
+  const ready = data.services.filter((service) => service.ok).length;
+  const date = new Intl.DateTimeFormat("uk-UA", { weekday: "long", day: "numeric", month: "long" }).format(new Date());
 
-        <section className={`attention ${snapshot.attention.tone}`} aria-live="polite">
-          <div className="attention-mark">✓</div>
-          <div><p>{snapshot.attention.title}</p><span>{snapshot.attention.detail}</span></div>
-          <button aria-label="Переглянути стан квартири">Переглянути</button>
-        </section>
+  return <main className="app-shell">
+    <aside className="rail">
+      <a className="logo" href="#top"><span>Д</span><b>Дім</b></a>
+      <nav aria-label="Розділи"><a className="active" href="#today">Огляд</a><a href="#tasks">Справи</a><a href="#kitchen">Кухня</a><a href="#things">Речі</a></nav>
+      <a className="vault-link" href="https://vault.home.arpa"><span>◇</span><div><b>Сховище</b><small>Vaultwarden</small></div></a>
+    </aside>
 
-        <div className="grid">
-          <section className="card tasks" id="plan">
-            <div className="card-head"><div><p className="kicker">НАШ ДЕНЬ</p><h2>{pending.length} справи залишилось</h2></div><a href="https://tasks.home.arpa">Усі справи</a></div>
-            <ul>
-              {snapshot.tasks.map((task) => <li key={task.id} className={task.done ? "done" : ""}><button aria-label={`Позначити «${task.title}» виконаним`}>{task.done ? "✓" : ""}</button><span>{task.title}<small>{task.owner}</small></span></li>)}
-            </ul>
-          </section>
+    <section className="workspace" id="top">
+      <header className="hero"><div><p className="date">{date}</p><h1>Усе домашнє<br/><em>в одному місці.</em></h1></div><button className="add-main" onClick={() => setComposer(true)}><span>＋</span> Додати</button></header>
 
-          <section className="card meal">
-            <p className="kicker">СЬОГОДНІ НА ВЕЧЕРЮ</p>
-            <div className="meal-art" aria-hidden="true"><span>🍅</span><span>🌿</span><span>🍝</span></div>
-            <h2>{snapshot.meal.title}</h2><p>{snapshot.meal.note}</p>
-            <a className="primary-link" href="https://mealie.home.arpa">Відкрити рецепт <b>→</b></a>
-          </section>
+      <section className="pulse" aria-live="polite"><div className="pulse-icon">{ready === 3 ? "✓" : "!"}</div><div><b>{ready === 3 ? "Дім у порядку" : "Потрібне підключення"}</b><span>{ready}/3 інтеграції відповідають · оновлення щохвилини</span></div><div className="service-dots">{data.services.map((s) => <i key={s.name} className={s.ok ? "online" : "offline"} title={`${labels[s.name]}: ${s.ok ? "працює" : s.connected ? "помилка" : "не підключено"}`}/>)}</div></section>
 
-          <section className="card home" id="home">
-            <div className="card-head"><div><p className="kicker">ДІМ</p><h2>Спокійний стан</h2></div><span className="status-pill">Усе гаразд</span></div>
-            <div className="home-stats">
-              <div><small>Температура</small><strong>{snapshot.home.temperature}°</strong><span>Комфортно</span></div>
-              <div><small>Вологість</small><strong>{snapshot.home.humidity}%</strong><span>У нормі</span></div>
-              <div><small>Двері</small><strong>●</strong><span>{snapshot.home.doors}</span></div>
-              <div><small>Вода</small><strong>≈</strong><span>{snapshot.home.water}</span></div>
-            </div>
-          </section>
+      <div className="dashboard-grid" id="today">
+        <section className="panel task-panel" id="tasks"><div className="panel-title"><div><p>НА СЬОГОДНІ</p><h2>Спільні справи</h2></div><span>{data.tasks.filter(t => !t.done).length} відкритих</span></div>
+          {loading ? <div className="skeleton"/> : data.tasks.length ? <ul className="task-list">{data.tasks.slice(0,6).map(task => <li key={task.id} className={task.done ? "done" : ""}><button onClick={() => toggle(task.id, !task.done)} aria-label={`Змінити стан: ${task.title}`}>{task.done ? "✓" : ""}</button><div><b>{task.title}</b><small>{task.due ? new Date(task.due).toLocaleDateString("uk-UA") : "Без терміну"}</small></div></li>)}</ul> : <Empty text={data.connected.vikunja ? "Справ поки немає" : "Підключіть Vikunja"}/>} </section>
 
-          <section className="card scenes">
-            <p className="kicker">ШВИДКІ СЦЕНИ</p><h2>Який зараз настрій?</h2>
-            <div className="scene-list">
-              {["Кіно", "Ніч", "Пішли"].map((item) => <button key={item} className={scene === item ? "selected" : ""} onClick={() => chooseScene(item)}><span>{item === "Кіно" ? "◐" : item === "Ніч" ? "☾" : "↗"}</span>{item}</button>)}
-            </div>
-            <small>Зараз: {scene}</small>
-          </section>
-        </div>
+        <section className="panel meal-panel" id="kitchen"><div className="panel-title"><div><p>ВЕЧЕРЯ</p><h2>{data.meal?.title || "Ще не заплановано"}</h2></div><span className="round-icon">⌁</span></div><div className="meal-visual"><span>сьогодні</span><strong>Смак вечора</strong></div><p>{data.meal?.note || "Оберіть страву в Mealie — вона з’явиться тут автоматично."}</p><a href={data.meal?.slug ? `https://mealie.home.arpa/g/home/r/${data.meal.slug}` : "https://mealie.home.arpa"}>Відкрити кухню →</a></section>
 
-        <footer id="rest"><p><span className="presence-dot" /> Усі основні сервіси працюють</p><a href="https://status.home.arpa">Стан системи</a></footer>
-      </section>
+        <section className="panel shopping-panel"><div className="panel-title"><div><p>ПОКУПКИ</p><h2>Список продуктів</h2></div><button onClick={() => {setKind("shopping.create");setComposer(true)}}>＋</button></div>{data.shopping.length ? <div className="chips">{data.shopping.filter(x=>!x.checked).slice(0,8).map(item=><span key={item.id}>{item.title}</span>)}</div> : <Empty text={data.connected.mealie ? "Список порожній" : "Підключіть Mealie"}/>}</section>
 
-      <button className="capture-button" onClick={() => setCaptureOpen(true)} aria-label="Швидко додати">＋</button>
-      {captureOpen && <div className="modal-backdrop" onMouseDown={() => setCaptureOpen(false)}><form className="capture" onSubmit={capture} onMouseDown={(e) => e.stopPropagation()}><div><p className="kicker">ШВИДКЕ ДОДАВАННЯ</p><button type="button" onClick={() => setCaptureOpen(false)} aria-label="Закрити">×</button></div><label htmlFor="capture">Що потрібно запам’ятати?</label><input autoFocus id="capture" name="capture" placeholder="Наприклад, купити молоко" autoComplete="off"/><fieldset><label><input type="radio" name="kind" value="task" defaultChecked/> Справа</label><label><input type="radio" name="kind" value="shopping"/> Покупка</label></fieldset><button className="submit" type="submit">Додати</button></form></div>}
-      {notice && <div className="toast" role="status">{notice}</div>}
-    </main>
-  );
+        <section className="panel things-panel" id="things"><div className="panel-title"><div><p>КВАРТИРА</p><h2>Останні речі</h2></div><button onClick={() => {setKind("thing.create");setComposer(true)}}>＋</button></div>{data.things.length ? <div className="things-list">{data.things.slice(0,5).map(item=><div key={item.id}><span>{item.name.slice(0,1).toUpperCase()}</span><p><b>{item.name}</b><small>{item.type} · {item.quantity} шт.</small></p></div>)}</div> : <Empty text={data.connected.homebox ? "Речей поки немає" : "Підключіть Homebox"}/>}</section>
+      </div>
+    </section>
+
+    {composer && <div className="overlay" onMouseDown={() => setComposer(false)}><form className="composer" onSubmit={submit} onMouseDown={e=>e.stopPropagation()}><header><div><p>ШВИДКА ДІЯ</p><h2>Що додамо?</h2></div><button type="button" onClick={()=>setComposer(false)}>×</button></header><div className="kind-tabs">{[["task.create","Справа"],["shopping.create","Покупка"],["thing.create","Річ"]].map(([value,label])=><button type="button" key={value} className={kind===value?"selected":""} onClick={()=>setKind(value)}>{label}</button>)}</div><input autoFocus name="title" placeholder={kind==="task.create"?"Наприклад, забрати посилку":kind==="shopping.create"?"Наприклад, молоко":"Наприклад, гарантія на чайник"}/><button className="save" type="submit">Додати до дому</button></form></div>}
+    {notice && <div className="toast" role="status">{notice}</div>}
+  </main>;
 }
+
+function Empty({text}:{text:string}) { return <div className="empty"><span>○</span><p>{text}</p></div>; }

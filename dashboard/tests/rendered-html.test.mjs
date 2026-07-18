@@ -16,18 +16,29 @@ test("renders the Ukrainian household dashboard", async () => {
   const html = await response.text();
   assert.match(html, /<html lang="uk"/i);
   assert.match(html, /<title>Наш дім(?: · Наш дім)?<\/title>/i);
-  assert.match(html, /НАШ ДЕНЬ/);
-  assert.match(html, /ШВИДКІ СЦЕНИ/);
-  assert.match(html, /СЬОГОДНІ НА ВЕЧЕРЮ/i);
+  assert.match(html, /Усе домашнє/);
+  assert.match(html, /Спільні справи/);
+  assert.match(html, /Список продуктів/i);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|Your site is taking shape/i);
 });
 
-test("exposes only the normalized snapshot endpoint", async () => {
+test("exposes a normalized snapshot without integration secrets", async () => {
   const response = await render("/api/snapshot");
   assert.equal(response.status, 200);
   const payload = await response.json();
-  assert.equal(payload.attention.title, "Усе гаразд");
   assert.ok(Array.isArray(payload.tasks));
-  assert.equal(payload.services.length, 4);
+  assert.equal(payload.services.length, 3);
   assert.equal(JSON.stringify(payload).includes("token"), false);
+});
+
+test("rejects dashboard writes when an integration is not configured", async () => {
+  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
+  workerUrl.searchParams.set("actions-test", `${process.pid}-${Date.now()}`);
+  const { default: worker } = await import(workerUrl.href);
+  const response = await worker.fetch(new Request("http://localhost/api/actions", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ action: "task.create", title: "Тест" }),
+  }), { ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) } }, { waitUntil() {}, passThroughOnException() {} });
+  assert.equal(response.status, 502);
 });
