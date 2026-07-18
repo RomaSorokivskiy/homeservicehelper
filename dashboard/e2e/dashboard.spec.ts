@@ -20,6 +20,7 @@ test("reduced motion and cached snapshot survive an offline reload", async ({ pa
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   await expect.poll(() => page.evaluate(() => localStorage.getItem("home-snapshot-v1") !== null)).toBe(true);
+  await expect.poll(() => page.evaluate(async () => (await caches.keys()).includes("our-home-shell-v1") && Boolean(await (await caches.open("our-home-shell-v1")).match("/")))).toBe(true);
   await context.setOffline(true);
   await page.reload({ waitUntil: "domcontentloaded" });
   await expect(page.getByText("Панель працює офлайн")).toBeVisible();
