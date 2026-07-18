@@ -89,6 +89,7 @@ type Snapshot = {
       lightsOn: number;
       temperature: string | null;
     }[];
+    controls: { id: string; name: string; on: boolean; domain: string }[];
   };
   household: {
     residents: { id: number; name: string; color: string }[];
@@ -121,6 +122,7 @@ const empty: Snapshot = {
     presence: [],
     energy: [],
     rooms: [],
+    controls: [],
   },
   household: { residents: [], queue: [], taskAssignments: [] },
   services: [],
@@ -633,6 +635,14 @@ export function HomeDashboard() {
         {space === "home" && (
           <HomeSpace
             data={data}
+            control={async (entityId, on) => {
+              try {
+                await action({ action: "home.set", entityId, on });
+                setNotice(on ? "Пристрій увімкнено" : "Пристрій вимкнено");
+              } catch {
+                setNotice("Не вдалося змінити стан пристрою");
+              }
+            }}
             activate={async (entityId) => {
               try {
                 await action({ action: "scene.activate", entityId });
@@ -1574,9 +1584,11 @@ function Cinema({
 function HomeSpace({
   data,
   activate,
+  control,
 }: {
   data: Snapshot;
   activate: (id: string) => void;
+  control: (id: string, on: boolean) => void;
 }) {
   return (
     <section className="home-page">
@@ -1642,6 +1654,24 @@ function HomeSpace({
                   {room.entities} пристроїв · {room.lightsOn} світла
                 </small>
               </article>
+            ))}
+          </div>
+        </>
+      )}
+      {(data.home.controls?.length || 0) > 0 && (
+        <>
+          <h2 className="section-title">Швидкі винятки</h2>
+          <div className="home-controls">
+            {data.home.controls.map((item) => (
+              <button
+                key={item.id}
+                className={item.on ? "on" : ""}
+                aria-pressed={item.on}
+                onClick={() => control(item.id, !item.on)}
+              >
+                <i>{item.domain === "light" ? "◉" : "ϟ"}</i>
+                <span><b>{item.name}</b><small>{item.on ? "Увімкнено · натисніть, щоб вимкнути" : "Вимкнено · натисніть, щоб увімкнути"}</small></span>
+              </button>
             ))}
           </div>
         </>
