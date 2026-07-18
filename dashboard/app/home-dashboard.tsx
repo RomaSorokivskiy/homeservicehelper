@@ -19,6 +19,10 @@ type MediaItem = {
   year: number | null;
   image: string | null;
   progress: number;
+  runtimeMinutes: number;
+  genres: string[];
+  rating: number | null;
+  trailer: string | null;
 };
 type QueueItem = {
   id: string;
@@ -66,6 +70,9 @@ type Snapshot = {
       client: string;
       nowPlaying: string | null;
       paused: boolean;
+      positionTicks: number;
+      runtimeTicks: number;
+      volume: number;
     }[];
   };
   home: {
@@ -1211,6 +1218,7 @@ function Cinema({
   residentId: number;
   perform: (p: Record<string, unknown>) => Promise<void>;
 }) {
+  const [selected, setSelected] = useState<MediaItem | null>(null);
   const items = data.cinema.resume.length
     ? data.cinema.resume
     : data.cinema.latest;
@@ -1246,7 +1254,7 @@ function Cinema({
         <a href="https://cinema.home.arpa">Відкрити Jellyfin ↗</a>
       </header>
       {target && (
-        <div className="player-strip">
+        <div className="player-strip" aria-label={`Пульт: ${target.name}`}>
           <span>
             <b>{target.name}</b>
             <small>{target.nowPlaying || "Готовий до відтворення"}</small>
@@ -1286,6 +1294,57 @@ function Cinema({
             }
           >
             ›
+          </button>
+          <button
+            aria-label="Перемотати назад на 15 секунд"
+            onClick={() =>
+              perform({
+                action: "cinema.seek",
+                sessionId: target.id,
+                positionTicks: Math.max(0, target.positionTicks - 150000000),
+              })
+            }
+          >
+            −15
+          </button>
+          <button
+            aria-label="Перемотати вперед на 15 секунд"
+            onClick={() =>
+              perform({
+                action: "cinema.seek",
+                sessionId: target.id,
+                positionTicks: Math.min(
+                  target.runtimeTicks || 864000000000,
+                  target.positionTicks + 150000000,
+                ),
+              })
+            }
+          >
+            +15
+          </button>
+          <button
+            aria-label="Зменшити гучність"
+            onClick={() =>
+              perform({
+                action: "cinema.volume",
+                sessionId: target.id,
+                volume: Math.max(0, target.volume - 5),
+              })
+            }
+          >
+            ♩−
+          </button>
+          <button
+            aria-label="Збільшити гучність"
+            onClick={() =>
+              perform({
+                action: "cinema.volume",
+                sessionId: target.id,
+                volume: Math.min(100, target.volume + 5),
+              })
+            }
+          >
+            ♩+
           </button>
         </div>
       )}
@@ -1380,8 +1439,10 @@ function Cinema({
           <div className="poster-grid">
             {items.map((item) => (
               <article key={item.id}>
-                <a
-                  href={`https://cinema.home.arpa/web/#/details?id=${item.id}`}
+                <button
+                  className="poster-detail"
+                  onClick={() => setSelected(item)}
+                  aria-label={`Докладніше: ${item.title}`}
                 >
                   <div>
                     {item.image ? (
@@ -1402,7 +1463,7 @@ function Cinema({
                   </div>
                   <b>{item.title}</b>
                   <small>{item.year || item.type}</small>
-                </a>
+                </button>
                 <button
                   onClick={() =>
                     perform({
@@ -1450,6 +1511,61 @@ function Cinema({
               ? "Додайте фільми до /srv/media/movies — Jellyfin просканує їх автоматично."
               : "У Jellyfin створіть домашнього користувача, бібліотеки Movies і Shows та API-ключ для панелі."}
           </p>
+        </div>
+      )}
+      {selected && (
+        <div className="drawer-shade" onClick={() => setSelected(null)}>
+          <aside
+            className="media-detail"
+            role="dialog"
+            aria-modal="true"
+            aria-label={selected.title}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              className="media-close"
+              onClick={() => setSelected(null)}
+              aria-label="Закрити опис"
+            >
+              ×
+            </button>
+            {selected.image && (
+              <div className="media-detail-poster">
+                <Image
+                  src={selected.image}
+                  alt={`Постер: ${selected.title}`}
+                  fill
+                  sizes="300px"
+                />
+              </div>
+            )}
+            <p>ДОМАШНЯ МЕДІАТЕКА</p>
+            <h2>{selected.title}</h2>
+            <small>
+              {[selected.year, selected.runtimeMinutes ? `${selected.runtimeMinutes} хв` : null, selected.rating ? `★ ${selected.rating.toFixed(1)}` : null]
+                .filter(Boolean)
+                .join(" · ")}
+            </small>
+            {selected.genres.length > 0 && (
+              <div className="media-genres">
+                {selected.genres.map((genre) => <span key={genre}>{genre}</span>)}
+              </div>
+            )}
+            <p className="media-overview">
+              {selected.overview || "Опис з’явиться після оновлення метаданих Jellyfin."}
+            </p>
+            <div className="media-actions">
+              {target && (
+                <button onClick={() => startMovieNight(selected.id)}>
+                  Дивитися на {target.name}
+                </button>
+              )}
+              <a href={`https://cinema.home.arpa/web/#/details?id=${selected.id}`}>
+                Відкрити в Jellyfin ↗
+              </a>
+              {selected.trailer && <a href={selected.trailer}>Трейлер ↗</a>}
+            </div>
+          </aside>
         </div>
       )}
     </section>

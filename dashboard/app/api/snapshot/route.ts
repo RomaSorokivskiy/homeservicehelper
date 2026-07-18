@@ -47,12 +47,12 @@ export async function GET() {
       const userId = users?.[0]?.Id;
       if (userId) {
         const [resume, latest] = await Promise.all([
-          readJellyfin(`${config.jellyfin}/Users/${userId}/Items/Resume?Limit=12&Fields=Overview,PrimaryImageAspectRatio`),
-          readJellyfin(`${config.jellyfin}/Users/${userId}/Items/Latest?Limit=12&IncludeItemTypes=Movie,Series&Fields=Overview,PrimaryImageAspectRatio`),
+          readJellyfin(`${config.jellyfin}/Users/${userId}/Items/Resume?Limit=12&Fields=Overview,PrimaryImageAspectRatio,Genres,CommunityRating,RunTimeTicks,ExternalUrls`),
+          readJellyfin(`${config.jellyfin}/Users/${userId}/Items/Latest?Limit=12&IncludeItemTypes=Movie,Series&Fields=Overview,PrimaryImageAspectRatio,Genres,CommunityRating,RunTimeTicks,ExternalUrls`),
         ]);
-        const normalizeMedia = (value: unknown) => ((value as { Items?: Record<string, unknown>[] })?.Items || (Array.isArray(value) ? value : [])).map((item) => ({ id: item.Id, title: item.Name, type: item.Type, overview: item.Overview || "", year: item.ProductionYear || null, image: item.ImageTags ? `/api/media-image?id=${item.Id}` : null, progress: (item.UserData as Record<string, unknown> | undefined)?.PlayedPercentage || 0 }));
+        const normalizeMedia = (value: unknown) => ((value as { Items?: Record<string, unknown>[] })?.Items || (Array.isArray(value) ? value : [])).map((item) => ({ id: item.Id, title: item.Name, type: item.Type, overview: item.Overview || "", year: item.ProductionYear || null, image: item.ImageTags ? `/api/media-image?id=${item.Id}` : null, progress: (item.UserData as Record<string, unknown> | undefined)?.PlayedPercentage || 0, runtimeMinutes: Math.round(Number(item.RunTimeTicks || 0) / 600000000), genres: Array.isArray(item.Genres) ? item.Genres : [], rating: Number(item.CommunityRating || 0) || null, trailer: ((item.ExternalUrls as Record<string,unknown>[] | undefined) || []).find((link) => /trailer|youtube/i.test(String(link.Name)))?.Url || null }));
         const sessions = await readJellyfin(`${config.jellyfin}/Sessions`) as Record<string, unknown>[];
-        cinema = { ...cinema, userId, resume: normalizeMedia(resume), latest: normalizeMedia(latest), sessions: (sessions || []).filter((x) => x.SupportsRemoteControl).map((x) => ({ id: x.Id, name: x.DeviceName || x.Client, client: x.Client, nowPlaying: (x.NowPlayingItem as Record<string, unknown> | undefined)?.Name || null, paused: (x.PlayState as Record<string, unknown> | undefined)?.IsPaused || false })) };
+        cinema = { ...cinema, userId, resume: normalizeMedia(resume), latest: normalizeMedia(latest), sessions: (sessions || []).filter((x) => x.SupportsRemoteControl).map((x) => { const play = x.PlayState as Record<string,unknown> | undefined; const now = x.NowPlayingItem as Record<string,unknown> | undefined; return { id: x.Id, name: x.DeviceName || x.Client, client: x.Client, nowPlaying: now?.Name || null, paused: play?.IsPaused || false, positionTicks: Number(play?.PositionTicks || 0), runtimeTicks: Number(now?.RunTimeTicks || 0), volume: Number(play?.VolumeLevel ?? 50) }; }) };
       }
     } catch { /* Public health remains useful until the administrator creates a token. */ }
   }
