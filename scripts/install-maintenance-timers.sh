@@ -18,7 +18,7 @@ cat > "$unit_dir/homeservicehelper-health.timer" <<'EOF'
 [Unit]
 Description=Check apartment services every five minutes
 [Timer]
-OnBootSec=2min
+OnActiveSec=2min
 OnUnitActiveSec=5min
 Persistent=true
 [Install]

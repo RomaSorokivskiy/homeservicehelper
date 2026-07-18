@@ -12,10 +12,11 @@ first=true
 for variable in "${images[@]}"; do
   image="${!variable}"
   before="$(docker image inspect "$image" --format '{{index .RepoDigests 0}}' 2>/dev/null || true)"
+  before_digest="${before##*@}"
   after_digest="$(docker buildx imagetools inspect "$image" --format '{{json .Manifest.Digest}}' 2>/dev/null | tr -d '"' || true)"
   after="${image%@*}@${after_digest}"
   $first || printf ',' >> "$state_dir/updates.json"; first=false
-  printf '{"variable":"%s","image":"%s","installed":"%s","available":"%s","changed":%s}' "$variable" "$image" "$before" "$after" "$([[ "$before" != "$after" ]] && echo true || echo false)" >> "$state_dir/updates.json"
+  printf '{"variable":"%s","image":"%s","installed":"%s","available":"%s","changed":%s}' "$variable" "$image" "$before" "$after" "$([[ "$before_digest" != "$after_digest" ]] && echo true || echo false)" >> "$state_dir/updates.json"
 done
 printf ']}\n' >> "$state_dir/updates.json"
 cat "$state_dir/updates.json"
