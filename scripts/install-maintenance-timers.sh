@@ -70,7 +70,7 @@ Description=Calculate 30-day apartment availability SLO
 [Service]
 Type=oneshot
 WorkingDirectory=$repo
-ExecStart=/usr/bin/node $repo/scripts/slo-report.mjs
+ExecStart=/usr/bin/docker run --rm -v $repo:/repo:ro -v $HOME/.local/state/homeservicehelper:/state:ro node:22-alpine node /repo/scripts/slo-report.mjs /state/health-history.jsonl
 EOF
 
 cat > "$unit_dir/homeservicehelper-slo.timer" <<'EOF'

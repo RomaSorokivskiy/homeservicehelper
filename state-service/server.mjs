@@ -28,6 +28,7 @@ createServer(async (request, response) => {
     const url = new URL(request.url, `http://${request.headers.host}`);
     if (request.method === "GET" && url.pathname === "/health") return json(response, 200, { ok: true });
     if (request.method === "GET" && url.pathname === "/state") return json(response, 200, state());
+    if (request.method === "GET" && url.pathname === "/audit") return json(response, 200, { items: db.prepare("SELECT action,ok,actor_name AS actorName,duration_ms AS durationMs,created_at AS createdAt FROM audit_log ORDER BY id DESC LIMIT 50").all() });
     const data = await body(request);
     if (request.method === "POST" && url.pathname === "/residents") {
       const name=String(data.name||"").trim().slice(0,40); if(name.length<2) return json(response,400,{error:"name"});
