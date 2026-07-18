@@ -9,6 +9,24 @@ async function call(url: string, token: string | undefined, method: string, body
   return response.status === 204 ? {} : response.json();
 }
 
+async function read(url: string, token: string | undefined) {
+  if (!token) throw new Error("Сервіс ще не підключено");
+  const response = await fetch(url, { headers: { Authorization: `Bearer ${token}`, Accept: "application/json" }, cache: "no-store", signal: AbortSignal.timeout(8000) });
+  if (!response.ok) throw new Error(`Сервіс відповів ${response.status}`);
+  return response.json();
+}
+
+async function upsertDinner(title?: string, servings?: number) {
+  const token = process.env.MEALIE_TOKEN;
+  const value = await read(`${urls.mealie}/api/households/mealplans/today`, token);
+  const entries = Array.isArray(value) ? value : value?.items || [];
+  const current = entries.find((item: Record<string, unknown>) => item.entryType === "dinner") || entries[0];
+  const date = new Date().toISOString().slice(0, 10);
+  const text = servings ? `Порції: ${Math.max(1,Math.min(20,servings))}` : String(current?.text || "");
+  if (current?.id) return call(`${urls.mealie}/api/households/mealplans/${current.id}`, token, "PUT", { ...current, date: current.date || date, title: title?.trim() || current.title || "Вечеря", text });
+  return call(`${urls.mealie}/api/households/mealplans`, token, "POST", { date, entryType: "dinner", title: title?.trim() || "Вечеря", text });
+}
+
 async function jellyfinCall(path: string, method: string, body?: unknown) {
   const token = process.env.JELLYFIN_TOKEN;
   if (!token) throw new Error("Кінотеатр ще не підключено");
@@ -36,7 +54,9 @@ export async function POST(request: NextRequest) {
     else if (data.action === "task.delete" && Number.isInteger(data.id)) result = await call(`${urls.vikunja}/tasks/${data.id}`, process.env.VIKUNJA_TOKEN, "DELETE", {});
     else if (data.action === "task.postpone" && Number.isInteger(data.id)) { const tomorrow = new Date(Date.now() + 86400000); tomorrow.setHours(18, 0, 0, 0); result = await call(`${urls.vikunja}/tasks/${data.id}`, process.env.VIKUNJA_TOKEN, "POST", { due_date: tomorrow.toISOString() }); }
     else if (data.action === "shopping.create") result = await call(`${urls.mealie}/api/households/shopping/items`, process.env.MEALIE_TOKEN, "POST", { shoppingListId: process.env.MEALIE_SHOPPING_LIST_ID, note: data.title, display: data.title, quantity: 1 });
-    else if (data.action === "meal.create") result = await call(`${urls.mealie}/api/households/mealplans`, process.env.MEALIE_TOKEN, "POST", { date: new Date().toISOString().slice(0, 10), entryType: "dinner", title: String(data.title || ""), text: "" });
+    else if (data.action === "meal.create" && typeof data.title === "string" && data.title.trim()) result = await upsertDinner(data.title);
+    else if (data.action === "meal.servings" && Number.isInteger(data.servings)) result = await upsertDinner(undefined, data.servings);
+    else if (data.action === "meal.delete" && Number.isInteger(data.id)) result = await call(`${urls.mealie}/api/households/mealplans/${data.id}`, process.env.MEALIE_TOKEN, "DELETE", {});
     else if (data.action === "shopping.toggle" && typeof data.id === "string" && typeof data.shoppingListId === "string") result = await call(`${urls.mealie}/api/households/shopping/items/${data.id}`, process.env.MEALIE_TOKEN, "PUT", { checked: Boolean(data.checked), shoppingListId: data.shoppingListId, display: String(data.title || ""), note: String(data.title || ""), quantity: 1 });
     else if (data.action === "shopping.rename" && typeof data.id === "string" && typeof data.shoppingListId === "string" && typeof data.title === "string" && data.title.trim().length > 1) result = await call(`${urls.mealie}/api/households/shopping/items/${data.id}`, process.env.MEALIE_TOKEN, "PUT", { checked: Boolean(data.checked), shoppingListId: data.shoppingListId, display: data.title.trim().slice(0, 160), note: data.title.trim().slice(0, 160), quantity: Number(data.quantity) || 1 });
     else if (data.action === "shopping.delete" && typeof data.id === "string") result = await call(`${urls.mealie}/api/households/shopping/items/${data.id}`, process.env.MEALIE_TOKEN, "DELETE", {});

@@ -39,4 +39,18 @@ if (thing) {
   await action({ action: "thing.update", id: thing.id, title: `${thing.name} · check`, quantity: thing.quantity });
   await action({ action: "thing.update", id: thing.id, title: thing.name, quantity: thing.quantity });
 }
-console.log(JSON.stringify({ ok: true, integrations: 5, reversibleGroceryLifecycle: Boolean(shopping), reversibleTaskLifecycle: Boolean(task), residentAttribution: Boolean(task&&snapshot.household?.residents?.length), reversibleHomeboxLifecycle: Boolean(thing), searchResults: search.results.length }));
+let reversibleDinnerLifecycle = false;
+if (!snapshot.meal) {
+  const created = await action({ action: "meal.create", title: "Integration check dinner" });
+  const id = created.result?.id;
+  if (!Number.isInteger(id)) throw new Error("Meal create did not return an id");
+  await action({ action: "meal.servings", servings: 3 });
+  await action({ action: "meal.delete", id });
+  reversibleDinnerLifecycle = true;
+} else {
+  const original = snapshot.meal.servings || 2;
+  await action({ action: "meal.servings", servings: original === 3 ? 4 : 3 });
+  await action({ action: "meal.servings", servings: original });
+  reversibleDinnerLifecycle = true;
+}
+console.log(JSON.stringify({ ok: true, integrations: 5, reversibleGroceryLifecycle: Boolean(shopping), reversibleTaskLifecycle: Boolean(task), residentAttribution: Boolean(task&&snapshot.household?.residents?.length), reversibleHomeboxLifecycle: Boolean(thing), reversibleDinnerLifecycle, searchResults: search.results.length }));
