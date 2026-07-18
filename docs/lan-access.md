@@ -39,4 +39,13 @@ bash scripts/export-local-ca.sh
 
 Передавайте `caddy-local-root.crt` лише власним довіреним пристроям. На Windows його потрібно імпортувати в `Trusted Root Certification Authorities`, а на Android/iOS — встановити як користувацький CA certificate і явно ввімкнути довіру.
 
+Для Windows це можна автоматизувати. Завантажте CA certificate із сервера, а потім запустіть від адміністратора:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/windows/setup-home-access.ps1 `
+  -CertificatePath "$env:TEMP\caddy-local-root.crt"
+```
+
+Скрипт зберігає попередні DNS-параметри в `C:\ProgramData\Homeservicehelper\dns-backup.json`. Відновити їх можна скриптом `scripts/windows/restore-dns.ps1`.
+
 DNS і вебсервіси призначені лише для домашньої LAN. Не відкривайте порти 53, 80, 443 або 8088 через port forwarding роутера.
